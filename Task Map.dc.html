@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  html, body { margin: 0; padding: 0; background: #EFEBE2; }
+  * { box-sizing: border-box; }
+  a { color: #2F6F5E; text-decoration: none; }
+  a:hover { color: #B4552D; }
+  ::selection { background: #E4DCCB; }
+</style>
+</helmet>
+<div dir="rtl" style="font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif; background: #EFEBE2; color: #171C1A; min-height: 100vh; padding: 26px 22px 60px; display: flex; flex-direction: column; gap: 20px">
+
+  <header style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; border-bottom: 1px solid #D9D3C7; padding-bottom: 16px">
+    <div style="display: flex; flex-direction: column; gap: 5px">
+      <div style="font-family: 'Space Grotesk', sans-serif; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: #6B726C">Responsibility Map · معرض سوار</div>
+      <h1 style="margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.01em">المهام المعتمدة وتوزيعها على الزملاء — {{ deptName }}</h1>
+      <div style="font-family: 'Space Grotesk', sans-serif; font-size: 14px; color: #6B726C">Approved tasks · owners · step sequences</div>
+    </div>
+    <div style="display: flex; gap: 4px; background: #E4DFD4; padding: 4px; border-radius: 999px">
+      <button onClick="{{ showMatrix }}" style="{{ matrixTabStyle }}">المصفوفة · Matrix</button>
+      <button onClick="{{ showBoard }}" style="{{ boardTabStyle }}">اللوحة · Board</button>
+      <button onClick="{{ showNetwork }}" style="{{ networkTabStyle }}">العلاقات · Network</button>
+      <button onClick="{{ showFlow }}" style="{{ flowTabStyle }}">مسار الطلب · Flow</button>
+      <button onClick="{{ showLanes }}" style="{{ lanesTabStyle }}">السباحة · Lanes</button>
+    </div>
+  </header>
+
+  <div style="display: flex; flex-wrap: wrap; gap: 8px">
+    <sc-for list="{{ deptTabs }}" as="d" hint-placeholder-count="2">
+      <button onClick="{{ d.onClick }}" style="{{ d.style }}">
+        <span style="{{ d.arStyle }}">{{ d.ar }}</span>
+        <span style="{{ d.enStyle }}">{{ d.en }} · {{ d.count }}</span>
+      </button>
+    </sc-for>
+  </div>
+
+  <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 18px; padding: 10px 14px; background: #FBFAF6; border: 1px solid #D9D3C7; border-radius: 4px">
+    <span style="font-size: 12px; font-weight: 600; color: #4A504A">دليل الألوان</span>
+    <sc-for list="{{ legendRoles }}" as="l" hint-placeholder-count="2">
+      <div style="display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 500">
+        <span style="{{ l.style }}"></span>
+        <span>{{ l.ar }}</span>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
+    <span style="font-size: 12px; color: #6B726C">تصفية حسب المسؤول</span>
+    <div style="display: flex; flex-wrap: wrap; gap: 6px">
+      <sc-for list="{{ ownerChips }}" as="o" hint-placeholder-count="6">
+        <button onClick="{{ o.onClick }}" style="{{ o.style }}">
+          <span style="{{ o.dot }}"></span>
+          <span>{{ o.name }}</span>
+          <span style="font-family: 'Space Grotesk', sans-serif; opacity: .65">{{ o.count }}</span>
+        </button>
+      </sc-for>
+    </div>
+    <span style="font-size: 12px; color: #5D635D">{{ filterHint }}</span>
+  </div>
+
+  <sc-if value="{{ isMatrix }}" hint-placeholder-val="{{ true }}">
+    <div style="background: #FBFAF6; border: 1px solid #D9D3C7; border-radius: 4px; overflow-x: auto">
+      <div style="{{ gridMinWidth }}">
+        <div style="{{ headRowStyle }}">
+          <div style="font-family: 'Space Grotesk', sans-serif; font-size: 11px; color: #5D635D; text-align: center">#</div>
+          <div style="font-size: 12px; font-weight: 600; color: #4A504A">المهمة</div>
+          <sc-for list="{{ owners }}" as="o" hint-placeholder-count="6">
+            <div style="{{ o.headStyle }}">
+              <span style="{{ o.dot }}"></span>
+              <span style="font-size: 12.5px; font-weight: 600">{{ o.name }}</span>
+            </div>
+          </sc-for>
+          <div style="font-size: 12px; font-weight: 600; color: #4A504A">ملاحظات</div>
+        </div>
+        <sc-for list="{{ rows }}" as="r" hint-placeholder-count="12">
+          <div onClick="{{ r.onOpen }}" style="{{ r.style }}" style-hover="background: #F2EFE7">
+            <div style="{{ r.numStyle }}">{{ r.num }}</div>
+            <div style="display: flex; flex-direction: column; gap: 3px; min-width: 0">
+              <span style="font-size: 13.5px; line-height: 1.45; font-weight: 500">{{ r.title }}</span>
+              <span style="{{ r.stepsBadgeStyle }}">{{ r.stepsLabel }}</span>
+            </div>
+            <sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="6">
+              <div style="display: flex; align-items: center; justify-content: center">
+                <span style="{{ c.style }}">{{ c.label }}</span>
+              </div>
+            </sc-for>
+            <div style="font-size: 11.5px; line-height: 1.5; color: #6B726C; min-width: 0">{{ r.note }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="font-family: 'Space Grotesk', sans-serif; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #5D635D">اضغط أي مهمة لعرض تسلسل خطواتها · اسحب أفقياً عند ضيق الشاشة</div>
+  </sc-if>
+
+  <sc-if value="{{ isBoard }}" hint-placeholder-val="{{ true }}">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; align-items: start">
+      <sc-for list="{{ boardCols }}" as="col" hint-placeholder-count="6">
+        <section style="background: #FBFAF6; border: 1px solid #D9D3C7; border-radius: 4px; display: flex; flex-direction: column; min-width: 0">
+          <div style="{{ col.headStyle }}">
+            <div style="display: flex; align-items: center; gap: 8px; min-width: 0">
+              <span style="{{ col.dot }}"></span>
+              <span style="font-size: 16px; font-weight: 700">{{ col.name }}</span>
+            </div>
+            <span style="font-family: 'Space Grotesk', sans-serif; font-size: 12px; color: #6B726C">{{ col.count }}</span>
+          </div>
+          <div style="font-size: 11.5px; color: #5D635D; padding: 0 14px 10px">{{ col.shared }}</div>
+          <div style="display: flex; flex-direction: column; gap: 8px; padding: 0 12px 14px">
+            <sc-for list="{{ col.cards }}" as="c" hint-placeholder-count="5">
+              <article onClick="{{ c.onOpen }}" style="{{ c.style }}" style-hover="border-color: #B4552D">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+                  <div style="display: flex; align-items: center; gap: 6px">
+                    <span style="{{ c.numStyle }}">{{ c.num }}</span>
+                    <span style="{{ c.roleStyle }}">{{ c.roleLabel }}</span>
+                  </div>
+                  <span style="{{ c.stepsBadgeStyle }}">{{ c.stepsLabel }}</span>
+                </div>
+                <div style="font-size: 13px; font-weight: 500; line-height: 1.5">{{ c.title }}</div>
+                <div style="{{ c.withStyle }}">{{ c.withLabel }}</div>
+              </article>
+            </sc-for>
+          </div>
+        </section>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isNetwork }}" hint-placeholder-val="{{ false }}">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; align-items: start">
+      <div style="background: #FBFAF6; border: 1px solid #D9D3C7; border-radius: 4px; padding: 10px">
+        <div style="position: relative; width: 100%; aspect-ratio: 640 / 540; direction: ltr">
+          <svg viewBox="0 0 640 540" style="position: absolute; inset: 0; width: 100%; height: 100%">
+            <sc-for list="{{ netEdges }}" as="e" hint-placeholder-count="6">
+              <g>
+                <path d="{{ e.d }}" style="{{ e.pathStyle }}"></path>
+                <circle cx="{{ e.ex }}" cy="{{ e.ey }}" r="5" style="{{ e.dotStyle }}"></circle>
+              </g>
+            </sc-for>
+          </svg>
+          <sc-for list="{{ netEdges }}" as="e" hint-placeholder-count="6">
+            <div style="{{ e.badgeStyle }}">{{ e.w }}</div>
+          </sc-for>
+          <sc-for list="{{ netNodes }}" as="n" hint-placeholder-count="6">
+            <div onClick="{{ n.onClick }}" style="{{ n.boxStyle }}">
+              <div style="{{ n.circleStyle }}">{{ n.name }}</div>
+              <div style="{{ n.subStyle }}">{{ n.sub }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="font-family: 'Space Grotesk', sans-serif; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #5D635D; text-align: center; padding: 4px 0 6px">السهم ينتهي عند الأساسي · الرقم = عدد المهام التي يغطيها البديل · اضغط موظفاً لإبراز علاقاته</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 12px">
+        <div style="background: #FBFAF6; border: 1px solid #D9D3C7; border-radius: 4px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px">
+          <div style="font-size: 13px; font-weight: 700">من يغطي من</div>
+          <sc-for list="{{ netPairs }}" as="p" hint-placeholder-count="5">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; padding: 6px 0; border-bottom: 1px dashed #E0DACD">
+              <span style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; line-height: 1.6"><span style="{{ p.bStyle }}">{{ p.b }}</span><span style="color: #5D635D">يغطي</span><span style="{{ p.pStyle }}">{{ p.p }}</span></span>
+              <span style="font-family: 'Space Grotesk', sans-serif; font-weight: 600">{{ p.n }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="background: #FBFAF6; border: 1px solid #D9D3C7; border-radius: 4px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px">
+          <div style="font-size: 13px; font-weight: 700">مهام لم يُحدَّد فيها بديل في الملف</div>
+          <sc-for list="{{ netGaps }}" as="g" hint-placeholder-count="5">
+            <div style="display: flex; align-items: center; justify-content: space-between; font-size: 13px; padding: 5px 0; border-bottom: 1px dashed #E0DACD">
+              <span>{{ g.name }}</span>
+              <span style="{{ g.style }}">{{ g.n }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isFlow }}" hint-placeholder-val="{{ false }}">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; align-items: start">
+      <sc-for list="{{ flowCols }}" as="col" hint-placeholder-count="6">
+        <section style="display: flex; flex-direction: column; gap: 8px; min-width: 0">
+          <div style="{{ col.headStyle }}">
+            <span style="font-family: 'Space Grotesk', sans-serif; font-size: 11px; opacity: .7">{{ col.n }}</span>
+            <span style="font-size: 15px; font-weight: 700">{{ col.name }}</span>
+            <span style="font-size: 11.5px; opacity: .75">{{ col.count }}</span>
+          </div>
+          <sc-for list="{{ col.cards }}" as="c" hint-placeholder-count="4">
+            <article onClick="{{ c.onOpen }}" style="display: flex; flex-direction: column; gap: 7px; padding: 10px 11px; background: #FFFEFA; border: 1px solid #E0DACD; border-radius: 3px; cursor: pointer" style-hover="border-color: #B4552D">
+              <div style="display: flex; align-items: center; justify-content: space-between">
+                <span style="font-family: 'Space Grotesk', sans-serif; font-size: 11px; font-weight: 600; color: #5D635D">م{{ c.num }}</span>
+                <span style="{{ c.stepsStyle }}">{{ c.steps }}</span>
+              </div>
+              <div style="font-size: 12.5px; line-height: 1.55; font-weight: 500; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden">{{ c.title }}</div>
+              <div style="display: flex; flex-wrap: wrap; gap: 4px">
+                <sc-for list="{{ c.pills }}" as="p" hint-placeholder-count="2">
+                  <span style="{{ p.style }}">{{ p.name }}</span>
+                </sc-for>
+              </div>
+            </article>
+          </sc-for>
+        </section>
+      </sc-for>
+    </div>
+    <div style="font-family: 'Space Grotesk', sans-serif; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #5D635D">التصنيف إلى المراحل تلقائي حسب نص المهمة · اضغط أي مهمة لعرض خطوات</div>
+  </sc-if>
+
+  <sc-if value="{{ isLanes }}" hint-placeholder-val="{{ false }}">
+    <div style="background: #FBFAF6; border: 1px solid #D9D3C7; border-radius: 4px; overflow-x: auto">
+      <div style="min-width: 1540px; display: flex; flex-direction: column">
+        <div style="display: grid; grid-template-columns: 96px repeat(8, minmax(0, 1fr)); gap: 6px; padding: 8px; background: #F1EEE6; border-bottom: 1px solid #D9D3C7; position: sticky; top: 0; z-index: 2">
+          <div></div>
+          <sc-for list="{{ laneHeads }}" as="h" hint-placeholder-count="6">
+            <div style="{{ h.style }}"><span style="font-family: 'Space Grotesk', sans-serif; font-size: 11px; opacity: .75">{{ h.n }}</span><span style="font-size: 13px; font-weight: 700">{{ h.name }}</span></div>
+          </sc-for>
+        </div>
+        <sc-for list="{{ laneRows }}" as="r" hint-placeholder-count="6">
+          <div style="display: grid; grid-template-columns: 96px repeat(8, minmax(0, 1fr)); gap: 6px; padding: 8px; border-bottom: 1px solid #E0DACD; align-items: start">
+            <div style="display: flex; flex-direction: column; gap: 3px; padding-top: 4px">
+              <span style="font-size: 15px; font-weight: 700">{{ r.name }}</span>
+              <span style="font-size: 11px; color: #5D635D">{{ r.sub }}</span>
+            </div>
+            <sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="6">
+              <div style="display: flex; flex-direction: column; gap: 5px; min-width: 0; min-height: 28px; padding: 4px; background: #F7F5EE; border-radius: 3px">
+                <sc-for list="{{ c.chips }}" as="k" hint-placeholder-count="2">
+                  <div onClick="{{ k.onOpen }}" style="{{ k.style }}" title="{{ k.title }}">
+                    <span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; margin-inline-end: 4px">م{{ k.num }}</span>{{ k.title }}
+                  </div>
+                </sc-for>
+              </div>
+            </sc-for>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="font-family: 'Space Grotesk', sans-serif; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #5D635D">صف لكل موظف · الأخضر أساسي والأصفر بديل · اضغط أي مهمة لعرض خطوات</div>
+  </sc-if>
+
+  <sc-if value="{{ hasOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeDrawer }}" style="position: fixed; inset: 0; background: rgba(23,28,26,.45); z-index: 40"></div>
+    <aside style="position: fixed; top: 0; right: 0; height: 100%; width: min(560px, 94vw); background: #FBFAF6; border-left: 1px solid #D9D3C7; box-shadow: -14px 0 40px rgba(23,28,26,.18); z-index: 41; display: flex; flex-direction: column">
+      <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; padding: 20px 22px 14px; border-bottom: 1px solid #E0DACD">
+        <div style="display: flex; flex-direction: column; gap: 6px; min-width: 0">
+          <div style="font-family: 'Space Grotesk', sans-serif; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #5D635D">مهمة {{ openNum }} · step sequence</div>
+          <h2 style="margin: 0; font-size: 18px; font-weight: 700; line-height: 1.5">{{ openTitle }}</h2>
+          <div style="display: flex; flex-wrap: wrap; gap: 5px; padding-top: 4px">
+            <sc-for list="{{ openOwners }}" as="o" hint-placeholder-count="3">
+              <span style="{{ o.style }}">{{ o.name }}</span>
+            </sc-for>
+          </div>
+        </div>
+        <button onClick="{{ closeDrawer }}" style="font-family: inherit; flex: none; border: 1px solid #D9D3C7; background: #F1EEE6; color: #4A504A; font-size: 13px; padding: 6px 12px; border-radius: 3px; cursor: pointer">إغلاق</button>
+      </div>
+      <div style="overflow-y: auto; padding: 18px 22px 28px; display: flex; flex-direction: column; gap: 14px">
+        <sc-if value="{{ openNote }}" hint-placeholder-val="{{ false }}">
+          <div style="background: #F8EFD6; border-right: 3px solid #B07C0B; padding: 10px 12px; border-radius: 3px; font-size: 12.5px; line-height: 1.6; color: #4A504A">{{ openNote }}</div>
+        </sc-if>
+        <sc-if value="{{ openHasSteps }}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-direction: column; gap: 0">
+            <sc-for list="{{ openSteps }}" as="s" hint-placeholder-count="8">
+              <div style="display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 12px; position: relative; padding-bottom: 14px">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 4px">
+                  <span style="{{ s.numStyle }}">{{ s.n }}</span>
+                  <span style="{{ s.lineStyle }}"></span>
+                </div>
+                <div style="font-size: 13.5px; line-height: 1.7; padding-top: 3px">{{ s.text }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ openNoSteps }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size: 13px; line-height: 1.7; color: #6B726C; background: #F1EEE6; border: 1px dashed #D0C9BA; padding: 14px; border-radius: 3px">هذه المهمة لا توجد لها صفوف خطوات في ورقة «تسلسل الخطوات» — الورقة توثّق 26 مهمة من المعرض و28 من التحضير فقط. أضف صفوفها في الورقة وتظهر هنا.</div>
+        </sc-if>
+      </div>
+    </aside>
+  </sc-if>
+
+  <footer style="display: flex; flex-wrap: wrap; gap: 18px; justify-content: space-between; border-top: 1px solid #D9D3C7; padding-top: 14px; font-size: 12px; color: #5D635D">
+    <span>{{ summary }}</span>
+    <span dir="ltr" style="font-family: 'Space Grotesk', sans-serif; text-align: left">{{ summaryEn }}</span>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;defaultView&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;matrix&quot;,&quot;board&quot;,&quot;network&quot;,&quot;flow&quot;,&quot;lanes&quot;],&quot;default&quot;:&quot;matrix&quot;,&quot;tsType&quot;:&quot;'matrix' | 'board' | 'network' | 'flow' | 'lanes'&quot;}}">
+const SHOW_OWNERS = [
+  { key: 'faisal', name: 'فيصل', off: 'السبت', color: '#2F6F5E' },
+  { key: 'mahmoud', name: 'محمود', off: 'الثلاثاء', color: '#B4552D' },
+  { key: 'zakaria', name: 'زكريا', off: 'الأحد', color: '#3A5A9B' },
+  { key: 'sharif', name: 'شريف', off: 'الاثنين', color: '#7A5FA0' },
+  { key: 'namareq', name: 'نمارق', off: 'الأربعاء', color: '#B07C0B' },
+  { key: 'shima', name: 'شيماء', off: 'الثلاثاء', color: '#1F6F7A' },
+  { key: 'shahd', name: 'شهد', off: 'الأحد', color: '#9B3A5A' },
+  { key: 'arwa', name: 'أروى', off: 'الأربعاء', color: '#5E7A2F' },
+  { key: 'rahaf', name: 'رهف', off: 'الأحد', color: '#6B5A45' }
+];
+
+const S = {
+  announce: [
+    'اعداد إعلانات للتحديثات الرسمية من الإدارة أو قسم التطوير أو التشغيل، تشمل المنتجات الجديدة، الإيقافات المؤقتة أو النهائية، أو تحديثات السياسات.',
+    'إعلان منتج جديد تم إصداره',
+    'إعلان عن صواني أو فازات جديدة (تأمين أو بيع)',
+    'إعلان إيقاف مؤقت لمنتج غير متوفر حتى إشعار آخر',
+    'إعلان إيقاف نهائي وإلغاء منتج أو صواني',
+    'إعلان تحديث سياسات وآليات التشغيل',
+    'إعلان تعليمات داخلية للالتزام بالنظام والإجراءات',
+    'حفظ نسخة وأرشفة الإعلانات في نموذج خاص للرجوع إليها عند الحاجة.',
+    'التأكد من وصول الإعلان لجميع الأعضاء المعنيين',
+    'إعلان إيقاف أخذ طلبات عند الوصول الى الطاقة الاستعابية القصوى'
+  ],
+  reception: [
+    'تجهيز الصالة قبل فتح المعرض.',
+    'تشغيل الشاشات تبع العرض التي تحتوي على المنيو.',
+    'استقبال العميل والترحيب به بأسلوب مهني.',
+    'شرح خدمات سوار للعميل من قبل موظفي الصالة المخصصين لاستقبال العملاء.',
+    'تقديم عينات التذوق.',
+    'توجيه العميل لأحد موظفي المبيعات حسب نوع الخدمة المطلوبة.',
+    'الرد على استفساراته وشرح الخدمات له وتوضيح جميع المعلومات بدقة.',
+    'مراجعة تفاصيل المناسبة معه بدقة.',
+    'شرح الحشوات، مدة الصلاحية، والأسعار.',
+    'شرح صواني التأمين ورسومها وسعتها وتوضيح أوقات جاهزية الطلب.'
+  ],
+  cards: [
+    'استلام تفاصيل العبارة التي يريد العميل طباعتها على كروت الإهداء.',
+    'تحرير النص وطباعته وتصوير الكارد وإرساله للعميل أو تسليمه في المعرض للمعاينة والاعتماد.',
+    'عمل تصميم للحروف أو الأسماء في حال طلب العميل وكان ذلك ممكناً.',
+    'البحث عن تصاميم جاهزة من الإنترنت وإرسالها للعميل كخيار في حال كان مناسباً له.',
+    'وضع تصاميم اللوقو لحلا الزفة أو الأكرليك في ملف PDF بعد الاعتماد لوضوح الدقة.'
+  ],
+  curtains: [
+    'رفع الستائر في بداية الدوام.',
+    'إنزالها أوقات بريك الصلاة.',
+    'رفعها مجدداً بعد البريك.',
+    'إنزالها في نهاية الدوام.',
+    'التأكد من سلامة الستائر وعدم وجود تلف.',
+    'تنظيف الستائر بشكل دوري.',
+    'رفع أي ملاحظات لقسم الصيانة.',
+    'توثيق أي تلف أو خلل فوراً.',
+    'مراجعة حالة الستائر أسبوعياً.'
+  ],
+  menu: [
+    'مراجعة الأصناف المعروضة في الصالة (صواني، شوكليت، مالح).',
+    'مطابقة كل صنف مع ما ورد في المنيو.',
+    'توثيق أي نقص أو اختلاف ورفعه لقسم الجودة وإبلاغهم بطلب تصوير المنتج لوضعه في المنيو.',
+    'تحديث العرض حسب المنيو المعتمد.',
+    'تصوير المنتجات من جديد في حال وجود تغيير في الشكل أو اللون.',
+    'يمنع عرض أي صنف غير مدرج في المنيو المعتمد.',
+    'مراجعة المنيو والتأكد من إضافة الأصناف الحديثة.',
+    'يمنع تعديل المنيو دون موافقة الإدارة.',
+    'توضع الأصناف الحديثة في قسم (جديد NEW) لمدة 4 أشهر من تاريخ إصدار المنتج.',
+    'توضيح مدة صلاحية المنتجات في المنيو (قسم الجودة والصلاحية).'
+  ],
+  scent: [
+    'التأكد من زيارة الشركة المختصة كل شهر (معطر دورة المياه - جهاز أروماتيك - شركة المبيدات الحشرية).',
+    'متابعة تغيير المعطرات في الصالة ودورات المياه كل شهر.',
+    'التأكد من استخدام الروائح المعتمدة فقط.',
+    'توثيق تاريخ التغيير في نموذج CHECK LIST.',
+    'فحص فعالية المعطرات بعد التركيب.',
+    'رفع أي ملاحظات أو شكاوى للإدارة.',
+    'إبلاغ قسم الحسابات في حال الفواتير والحوالات وتجديد الاشتراكات.',
+    'توثيق أي تأخير أو غياب للشركة المختصة.',
+    'التواصل بشكل مباشر في حال عطل الأجهزة أو التأخير في الزيارات.',
+    'يمنع تغيير نوع المعطر دون موافقة الإدارة.'
+  ],
+  marble: [
+    'إزالة قطعة الرخام بعد انتهاء فترة التذوق.',
+    'تنظيفها جيداً باستخدام الأدوات المخصصة بعد كل استخدام.',
+    'التأكد من عدم وجود أي بقايا أو تلف.',
+    'إعادتها إلى مكانها الأصلي في غرفة التحضير.',
+    'يمنع ترك قطعة الرخام في العرض أو الصالة بعد التذوق.',
+    'مراجعة حالتها أسبوعياً وطلب عدد جديد من المشتريات في حال التلف أو الخدوش.',
+    'يمنع استخدامها في غير أغراض التذوق.',
+    'يجب استخدام القفاز الأسود من قبل موظفي المبيعات عند تقديم العينات على الرخام.'
+  ],
+  invoices: [
+    'مراجعة الفاتورة المرتبطة بالطلب.',
+    'التأكد من سداد المبلغ بالكامل عبر النظام أو التحويل البنكي.',
+    'توثيق عملية السداد في سجل الطلبات.',
+    'التأكد من تطابق المبلغ مع الفاتورة الأصلية.',
+    'إرسال نسخة من إيصال الدفع إلى قسم الحسابات للتأكد من وصول المبلغ.',
+    'يمنع تسليم أي طلب قبل سداد الفاتورة.',
+    'التواصل مع قسم المالية في حال وجود أي تأخير.',
+    'مراجعة سجل المدفوعات يومياً.',
+    'إرسال الفواتير للعملاء عند تسجيل أي سند قبض أو دفعة جديدة.',
+    'التأكد من تحديد طريقة الدفع: حوالة، شبكة، كاش، أو رابط دفع.'
+  ],
+  cleanShow: [
+    'تنظيف الأرضيات والأسطح قبل بداية الدوام.',
+    'التأكد من نظافة الصالة بالكامل.',
+    'فحص فلاتر التكييف أسبوعياً.',
+    'إزالة أي مخلفات أو مواد غير مرغوبة.',
+    'تنظيف الزجاج والواجهات الخارجية.',
+    'ترتيب المنتجات والبوكسات بشكل منظم.',
+    'التأكد من توفر المعطرات والمناديل.',
+    'استخدام أدوات تنظيف معتمدة.',
+    'تنظيف الأجهزة والشاشات ومنطقة العرض.',
+    'تنظيف الصواني تبع العرض والبيع والأرفف.'
+  ],
+  zafa: [
+    'فتح الطلب المعتمد ومراجعة تفاصيله: نوع الحلا، عدد القطع، الألوان المطلوبة.',
+    'فصل كل نوع من الحلا على حدة لتسهيل العد والتأكد من عدم وجود خلط بين الأنواع.',
+    'العد اليدوي للقطع.',
+    'مطابقة الألوان.',
+    'التأكد من الحشوات ومطابقتها.',
+    'توثيق أي اختلافات.',
+    'في حال وجود اختلاف في اللون أو العدد أو النوع، يتم تصوير القطع وتوثيق الملاحظة مع التاريخ والوقت.',
+    'التأكد من تصميم اللوقو ووضوح جودته.',
+    'التواصل مع المورد مباشرة في حال وجود خلل لتحديد الإجراء المناسب (استبدال، تعديل، أو تعويض).',
+    'توقيع الاستلام على الفاتورة وإدخالها لقسم التحضير لوضع أكواد الأصناف ورفعها للحسابات.'
+  ],
+  schedule: [
+    'استخراج قائمة المناسبات المجدولة خلال الشهر.',
+    'وضع أعداد الصواني للحالي والمالح وحلا الزفة وفازات طاولات الخدمة وموقع المناسبة، وإضافة عاملة أو من دون حسب الحاجة.',
+    'إرسال جدولة الإشراف للمشرفات قبل 3 أيام من المناسبة الداخلية، وقبل 5 أيام إذا كانت خارج الرياض.',
+    'تجهيز نص الرسالة الرسمي الذي يوضح وقت ومكان حضور المشرفة وإرساله للعميلة قبل يوم أو يومين من المناسبة.',
+    'يمنع إرسال الرسالة قبل التأكد من جدول المشرفة.',
+    'مراجعة جدولة الإشراف كل يوم وتحديثها في حال الإضافة أو الإلغاء.',
+    'تعديل أعداد الصواني وإبلاغ المشرفات بالتعديل المطلوب حتى لو تم الجدولة والإرسال من قبل.',
+    'يمنع تأخير إرسال الرسالة عن الموعد المحدد.',
+    'توضيح أي ملاحظة أو تعليمات في خانة الملاحظات لوضوحها للمشرفة.',
+    'التأكد من تاريخ المناسبة ومطابقته في النظام للتأكد من الموعد الفعلي.'
+  ],
+  delivery: [
+    'التواصل مع العميل لأخذ لوكيشن المناسبة مع التأكيد على الموعد باليوم والتاريخ عند الإرسال.',
+    'وضع اللوكيشن مع أعداد الصواني ورقم العميل بالتاريخ المطلوب في شيت التوصيل للجدولة.',
+    'التأكد من سداد كامل المبلغ قبل خروج الطلب للطلبات الداخلية والخارجية.',
+    'في حال خرج الطلب ولم يُحوّل المبلغ كاملاً، يُبلّغ السائق بعدم إنزال الطلب إلا بعد التواصل مع المسؤول من فريق المبيعات والتأكد من دفع المتبقي.',
+    'توضيح حالة الطلب إذا كان خارج الرياض، مثال التوصيل إلى الدمام مع الانتظار إلى نهاية المناسبة لأخذ الصواني والعودة بها.',
+    'إبلاغ العملاء بأوقات التوصيل من 4 إلى 7:30، وفي حال خارج الرياض يتم الاتفاق على وقت محدد.',
+    'عند إرسال اللوكيشن يجب فتح اللنك والتأكد أنه يعمل والموقع صحيح.',
+    'لطلبات خارج المملكة (الكويت، قطر، بقية دول الخليج المعتمدة) يكون الدفع عن طريق رابط دفع مباشر، والرسوم واحدة بانتظار أو من دون.',
+    'جدولة التوصيل قبل يوم وقبل الساعة 6 مساءً؛ وأي توصيل بعد 6 يُرجع أولاً لمسؤول الخدمات والمساندة لأخذ الإمكانية.',
+    'التأكد دائماً أن تبريد السيارة يعمل بدرجة معتمدة من 18 إلى 20 مئوية وأن السيارة نظيفة ورائحتها جيدة.'
+  ],
+  office: [
+    'متابعة نظافة الأرضيات والأسطح بشكل دوري خلال الوردية.',
+    'تنظيف أي منطقة تتسخ فوراً دون تأخير.',
+    'التأكد من توفر أدوات التنظيف في أماكنها.',
+    'تنظيف دورات المياه والمعرض حسب الجدول.',
+    'يمنع ترك أي منطقة متسخة أثناء الوردية.',
+    'نظافة الجاهز بالمكتب والطاولات والشاشة.',
+    'نظافة الزجاج الخارجي للمكتب من الداخل والخارج.',
+    'نظافة المرآة الداخلية لديكور المكتب والباركية.',
+    'نظافة الكنب والوسادات والستائر وغسلها كل 3 أو 6 أشهر أو عند الحاجة.',
+    'تشغيل المبخرة عند فتح المعرض وعند منتصف الدوام في حال الحاجة.'
+  ],
+  capacity: [
+    'الحد الأقصى هو تجهيز 3 أواني في الساعة لكل شخص يعمل في التحضير.',
+    '3 × عدد موظفي غرفة التحضير (ما عدا المشرف) × مجموع ساعات العمل الأساسية والإضافية (بما لا يتجاوز 14 ساعة للموظف يومياً) = الطاقة الاستيعابية القصوى.',
+    'يُشعر مشرف التحضير مدير المعرض عند الوصول إلى الطاقة الاستيعابية القصوى.',
+    'مدير المعرض صاحب القرار بالإيقاف من عدمه، وعلى هذا الأساس يُعمل إعلان للفريق بالإيقاف مع تحديد اليوم والتاريخ.',
+    'رصد عدد الطلبات والمناسبات وأعداد الأواني وكميات الشوكليت، مع احتساب نوع المنتج (شوكليت، طازج، مالح).',
+    'مراجعة المساحات المتاحة في غرف التحضير لضمان عدم التكدس أو التأثير على جودة العمل.',
+    'تخصيص وقت لإعداد الصواني التي تُحضّر في نفس اليوم (المنتجات الطازجة).',
+    'إبلاغ العميل: نعتذر، لا يمكننا استقبال طلبات جديدة حالياً بسبب بلوغ الطاقة الاستيعابية وكثرة الطلبات. نقدر تفهمكم ونتطلع لخدمتكم قريباً.',
+    'في حال وجود طلب مؤكد سابق، يمكن للعميل إضافة كمية أو منتجات إلى نفس الطلب.',
+    'إذا كان لدى العميل فاتورة مفتوحة أو طلب مؤجل بدون تاريخ وتم التواصل لتحديد موعد التنفيذ، يُقبل الطلب.'
+  ],
+  reviewOrders: [
+    'مراجعة الطلبات التي تم إنشاؤها في اليوم السابق.',
+    'التأكد من اكتمال جميع البيانات المطلوبة.',
+    'مطابقة الطلبات مع السياسات المعتمدة.',
+    'توثيق أي نقص أو ملاحظات.',
+    'تحديث حالة الطلب حسب التعديلات.',
+    'يمنع تنفيذ أي طلب غير مكتمل البيانات.',
+    'توثيق أي تعديل في الطلب.',
+    'التأكد من تطابق الطلب مع الفاتورة.',
+    'يمنع حذف أو تعديل أي صنف طازج دون الرجوع إلى المدير المباشر.',
+    'مراجعة سجل الطلبات أسبوعياً وتحديث الكميات.'
+  ],
+  prayer: [
+    'تنظيف السجادات تبع المصلى.',
+    'تجهيز السجادات عند اقتراب أوقات الصلاة.',
+    'ترتيب المصلى بشكل منظم.',
+    'غسل السجادات كل 3 أو 6 أشهر.',
+    'طي السجادات بعد الانتهاء من الصلاة بدقائق.',
+    'يمنع استخدام المصلى لأي غرض غير الصلاة.'
+  ],
+  training: [
+    'إعداد خطة تدريب واضحة حسب المهام التشغيلية.',
+    'تقديم شرح نظري للسياسات والإجراءات المعتمدة.',
+    'قراءة الدليل التشغيلي والاطلاع على جميع السياسات.',
+    'الاطلاع على المنيو ومعرفة مدة صلاحية المنتجات وسعة الصواني والفازات وقيمة التأمين ورسوم الإيجار.',
+    'متابعة أحد الزملاء السابقين أثناء البيع وخدمة العميل وملازمته.',
+    'متابعة أداء الموظف خلال فترة التدريب.',
+    'اختبار الموظف بأسئلة من الدليل التشغيلي تخص السياسات.',
+    'توثيق أي ملاحظات أو صعوبات يواجهها الموظف.',
+    'مراجعة خطة التدريب أسبوعياً.',
+    'تقييم الموظف قبل انتهاء فترة التجربة.'
+  ],
+  onTime: [
+    'تأكيد موعد التسليم بدقة عند استلام الطلب.',
+    'تسجيل الطلب ضمن جدول الجاهزية حسب التاريخ والوقت المطلوب.',
+    'متابعة حالة الطلب بشكل دوري لضمان سير العمل دون تأخير.',
+    'التنسيق المسبق مع قسم الإنتاج والتغليف لضمان الجاهزية.',
+    'التواصل مع قسم التوصيل لتأكيد توفر المركبة والوقت المحدد.',
+    'في حال وجود أي تأخير محتمل، يجب إبلاغ الإدارة فوراً.',
+    'بعد توجيه الإدارة يُبلّغ العميل مباشرة وبأسلوب مهني عن سبب التأخير مع تقديم توقيت بديل واضح.',
+    'تقديم اعتذار رسمي عند الحاجة مع عرض تعويض رمزي إن لزم (حسب توجيهات الإدارة).',
+    'تسجيل سبب التأخير في سجل خاص لمراجعة الحالات ومعالجتها مستقبلاً.',
+    'مراجعة دورية لأسباب التأخير واقتراح حلول عملية لتفادي تكرارها.'
+  ],
+  displaySwap: [
+    'تغيير منتجات العرض الخاصة بالمالح كل أسبوع.',
+    'مراعاة التنويع بين الأصناف وتدويرها حسب جودة المنتج.',
+    'تحديث أصناف الشوكليت وتغييرها بداية كل شهر.',
+    'تغيير المنتجات التي تتأثر جودتها بشكل دوري.',
+    'التشييك على أن المنتج مطابق للمنيو ونفس الشكل.',
+    'يُستبدل أي منتج تظهر عليه علامات انخفاض الجودة فوراً.',
+    'الطلب من المطبخ في حال احتياج عينات لمنطقة العرض على الفور.',
+    'الحفاظ على ترتيب المنتجات وقطع الرخام بشكل مستوٍ ومنسق.',
+    'التشييك على نظافة منطقة العرض من الداخل.',
+    'تغيير الرخام في حال كانت جودته غير مناسبة.'
+  ],
+  monthlyReport: [
+    'جمع ملاحظات الفريق طوال الشهر من الاجتماعات اليومية.',
+    'تصنيف المشاكل حسب نوعها (تشغيلية، فنية، تنظيمية، بشرية).',
+    'اقتراح حلول عملية لكل مشكلة بناءً على الواقع التشغيلي.',
+    'مراجعة النقاط مع الإدارة.',
+    'حفظ نسخة في ملف خاص بالتقارير الشهرية.',
+    'متابعة تنفيذ الحلول المقترحة وتوثيق نتائجها.',
+    'يجب أن يكون التقرير موضوعياً ويعكس الواقع بدقة.',
+    'تُشارك نسخة من التقرير مع الفريق بعد اعتماده.',
+    'توثيق أي مشكلة متكررة بشكل منفصل.'
+  ],
+  overtime: [
+    'مراجعة ساعات العمل الفعلية للموظف.',
+    'تحديد عدد الساعات الإضافية حسب الاحتياج من قبل مشرف التحضير وإبلاغ مدير المعرض.',
+    'تعبئة نموذج احتساب الأوفر تايم.',
+    'رفع طلب الأوفر تايم على جسر بشكل مباشر.',
+    'يمنع احتساب أي ساعة إضافية غير موثقة.',
+    'مراجعة السجلات شهرياً.',
+    'التأكد من الإنتاجية مقارنة بالساعات الإضافية وعدم التهاون أو التباطؤ.',
+    'توثيق تسليم طلبات خارج الرياض.'
+  ],
+  deposit: [
+    'مراجعة سجل الطلبات المستحقة لرد التأمين.',
+    'التأكد من استلام الصواني بحالة سليمة.',
+    'جمع بيانات العميل البنكية (الاسم، رقم الحساب، البنك).',
+    'التشييك على نموذج طلب رد التأمين المعتمد.',
+    'إرسال المعلومات البنكية لقسم المالية ومتابعة تنفيذ التحويل البنكي.',
+    'توثيق حالة الرد في سجل التأمين.',
+    'يمنع رد التأمين نقداً تحت أي ظرف.',
+    'التأكد من صحة البيانات البنكية قبل الإرسال، وطلب إيصال من الحسابات لإرساله للعميل.',
+    'مراجعة سجل التأمين كل 3 أيام.',
+    'رفع تقرير شهري عن حالات التأخير وعدم رد الصواني لتعديل الأعداد من المستودع.'
+  ],
+  supplier: [
+    'مراجعة جدول المناسبات التي تشمل حلا الزفة.',
+    'وضع حلا الزفة في الشيت من قبل كل موظف قبل 5 أيام من المناسبة مع العدد ورقم الفاتورة واللون والتاريخ والملاحظات وإضافة اللوقو.',
+    'إرسال الطلب ووضعه في الشيت مع إرفاق اللوقو وتوضيح العدد والملاحظات وتاريخ الاستلام وتأكيد الموعد.',
+    'فحص الحلا عند الاستلام والتأكد من جودته.',
+    'توثيق الطلب ومطابقته بالشكل والعدد والتوقيع على الفاتورة.',
+    'توثيق أي تأخير أو نقص في الاستلام.',
+    'إرسال اللوقو في ملف PDF باللون الأسود المعتمد للوضوح والدقة.',
+    'توضيح في خانة الملاحظات للمورد إذا كان الطلب خارج الرياض (مثال: الدمام) بتجهيز الطلب الساعة 9 صباحاً لاستلامه من معمل المورد عن طريق مندوب التوصيل.',
+    'التأكد من استلام صمغ الحلا لتثبيت اللوقو مع كل طلبية.',
+    'إبلاغ المورد مباشرة في حال وجود خطأ في الطلبية للإرجاع والتعديل في أسرع وقت.'
+  ],
+  pest: [
+    'التواصل مع الشركة لتأكيد الموعد والموقع.',
+    'زيارة شهرية مع توثيق كل زيارة.',
+    'تكون الزيارة الساعة 12 ظهراً قبل فتح المعرض بساعات.',
+    'المتابعة كل شهر، وفي حال تأخير الزيارة يتم التواصل معهم بشكل مباشر.',
+    'التأكد من استخدام المواد المصرح بها والالتزام بالسلامة.',
+    'توثيق الزيارة لكل شهر في نموذج الشيك ليست تبع مدير المعرض.',
+    'تقييم أداء الشركة ورفع تقرير مختصر للإدارة.',
+    'مراقبة النتائج خلال الأيام التالية.',
+    'التواصل مع الشركة في حال ظهور أي مؤشرات غير مرغوبة.'
+  ]
+};
+
+const SHOW_TASKS = [
+  {"t":"ارسال بطاقات المنتجات الجديدة والملغية وأي معلومة يتطلب ايصالها لفريق العمل من خلال (جروب تحديث وإعلانات عامه)","o":["faisal","mahmoud"],"note":"في حال الاوف يكون محمود والإعلان بالتشاور مع الإدارة","s":["اعداد إعلانات للتحديثات الرسمية من الإدارة أو قسم التطوير أو التشغيل، تشمل المنتجات الجديدة، الإيقافات المؤقتة أو النهائية، أو تحديثات السياسات.","إعلان منتج جديد تم إصداره","إعلان عن صواني أو فازات جديدة (تأمين أو بيع)","إعلان إيقاف مؤقت لمنتج غير متوفر حتى إشعار آخر","إعلان إيقاف نهائي وإلغاء منتج أو صواني","إعلان تحديث سياسات وآليات التشغيل","إعلان تعليمات داخلية للالتزام بالنظام والإجراءات","حفظ نسخة وأرشفة الإعلانات في نموذج خاص للرجوع إليها عند الحاجة.","التأكد من وصول الإعلان لجميع الأعضاء المعنيين","إعلان إيقاف أخذ طلبات عند الوصول الى الطاقة الاستعابية القصوى"]},
+  {"t":"استقبال عملاء المناسبات","o":["faisal","mahmoud","zakaria","sharif"],"note":"التعاون من الجميع في حال يوجد تصاميم خاصة يتم تنسيق موعد لها","s":["تجهيز الصالة قبل فتح المعرض.","تشغيل الشاشات تبع العرض التي تحتوي على المنيو.","استقبال العميل والترحيب به بأسلوب مهني.","شرح خدمات سوار للعميل من قبل موظفي الصالة المخصصين لاستقبال العملاء.","تقديم عينات التذوق.","توجيه العميل لأحد موظفي المبيعات حسب نوع الخدمة المطلوبة.","الرد على استفساراته وشرح الخدمات له وتوضيح جميع المعلومات بدقة.","مراجعة تفاصيل المناسبة معه بدقة.","شرح الحشوات، مدة الصلاحية، والأسعار.","شرح صواني التأمين ورسومها وسعتها وتوضيح أوقات جاهزية الطلب."]},
+  {"t":"الإلتزام بعرض ما لا يقل عن عدد 12 من صواني البيع والتنوع من حيث الاحجام والأسعار ومتابعة المتوفر منها وطلب صواني جديدة وكل ما يتعلق بها والالتزام باخذ موافقه إدارة التطوير قبل العرض","o":["mahmoud"],"note":"مع الحرص على أن تكون الأعداد والأشكال المتوفره دائما تكفي لمدة شهر متابعة وتحديث تاريخ الصلاحيه عن طريق جيلورد وتحضير الصواني بالتعاون بين فريق التحضير كل يوم أحد متابعة محمود","s":["تجهيز 12 صينية متنوعة من حيث الحجم والسعر.","التأكد من نظافة كل صينية قبل العرض.","مراجعة حالة الصواني والتأكد من خلوها من أي تلف.","ترتيب الصواني في أماكن العرض مع وضع التسعير لكل صينية والتأكد من التغليف والريبون.","طلب صواني جديدة عند الحاجة من المستودع.","تصويرها بشكل يومي مع ذكر الأوزان لكل صينية وسعرها.","يوضع في كل صينية نوع إلى نوعين حسب السعة، على أن يكون صنف واحد من الأكثر مبيعاً والآخر من الأقل أو المتوسط.","تكون مدة صلاحية المنتجات شهراً ولا توضع منتجات طازجة.","يجب التأكد من وجود تنوع في الأحجام والأسعار.","يجب التأكد من توفر كرت الصلاحية وتاريخ الإنتاج والانتهاء والسعرات على كل صينية."],"r":{"mahmoud":"p"}},
+  {"t":"الإلتزام بعرض صينيه من كل شكل (بحالة ممتازة) بالصاله من صواني التأمين.","o":["sharif","arwa"],"note":"يتم التنسيق مع جواد لطلب عينه من كل شكل من الصواني","s":["فرز صواني التأمين حسب الشكل.","اختيار صينية واحدة من كل شكل بحالة ممتازة.","تنظيفها وتجهيزها للعرض.","وضعها في أماكن مخصصة بالصالة.","تنويع الصواني في العرض كل أسبوع.","يمنع عرض صواني بها خدوش أو تلف.","يجب التأكد من أن كل شكل ممثل بصينية واحدة على الأقل.","تُنظف الصواني المعروضة يومياً.","يجب التأكد من عدم خلط صواني التأمين مع صواني البيع.","عدم وضع صواني غير معتمدة."],"r":{"sharif":"b","arwa":"b"}},
+  {"t":"الالتزام بتعبئة نموذج المراجعة لكافة طلبات التوصيل أو الاشراف","o":["zakaria"],"note":"في حال الاوف يتم تعبئة النموذج من قبل جيلورد ومتابعة من زكريا للتاكد بان الطلب تم دفع قيمته بالكامل","s":["فتح الطلب في السستم والتشييك عليه.","مراجعة تفاصيل الطلب بدقة.","تعبئة النموذج المعتمد للمراجعة والتأكد من التغليف.","توقيع النموذج من الموظف المسؤول والتأكد من مطابقة الأعداد.","توقيع السائق الذي استلم الطلب، ثم توقيع المشرفة التي استلمت من السائق عند وصول الطلب للموقع.","تصوير ورفع النموذج على قروب الجودة موضحاً وقت التسليم.","يمنع تسليم أي طلب دون تعبئة النموذج.","يجب التأكد من توقيع السائق ومشرف غرفة التحضير والمشرفة على المناسبة.","يجب توثيق أي ملاحظات أو اختلافات.","يجب التأكد من شنطة الإشراف وأنها تحتوي على جميع المتطلبات."],"r":{"zakaria":"p"}},
+  {"t":"التأكد من سداد فواتير المبيعات قبل خروج الطلب من المعرض","o":["faisal","mahmoud","zakaria","sharif","namareq","shima","shahd"],"note":"كل شخص مسؤول عن الطلب الذي يقوم بتسليمه ويجب عمل فاتورة عند التسليم","s":["مراجعة الفاتورة المرتبطة بالطلب.","التأكد من سداد المبلغ بالكامل عبر النظام أو التحويل البنكي.","توثيق عملية السداد في سجل الطلبات.","التأكد من تطابق المبلغ مع الفاتورة الأصلية.","إرسال نسخة من إيصال الدفع إلى قسم الحسابات للتأكد من وصول المبلغ.","يمنع تسليم أي طلب قبل سداد الفاتورة.","التواصل مع قسم المالية في حال وجود أي تأخير.","مراجعة سجل المدفوعات يومياً.","إرسال الفواتير للعملاء عند تسجيل أي سند قبض أو دفعة جديدة.","التأكد من تحديد طريقة الدفع: حوالة، شبكة، كاش، أو رابط دفع."]},
+  {"t":"التأكد من نظافة المعرض قبل فتحه للعملاء، ومتابعة نظافة الصالة بشكل عام بما فيها (فلاتر التكييف بشكل اسبوعي يوم الاحد)","o":["faisal","mahmoud"],"note":"من الساعة 2 قبل فتح المعرض","s":["تنظيف الأرضيات والأسطح قبل بداية الدوام.","التأكد من نظافة الصالة بالكامل.","فحص فلاتر التكييف أسبوعياً.","إزالة أي مخلفات أو مواد غير مرغوبة.","تنظيف الزجاج والواجهات الخارجية.","ترتيب المنتجات والبوكسات بشكل منظم.","التأكد من توفر المعطرات والمناديل.","استخدام أدوات تنظيف معتمدة.","تنظيف الأجهزة والشاشات ومنطقة العرض.","تنظيف الصواني تبع العرض والبيع والأرفف."]},
+  {"t":"التأكد من وضع كرت الصلاحيه واستكر السعرات الحراريه واستكر تاريخ الإنتاج على صواني البيع والتأكد من عدم وجود أي ملصقات من المورد","o":["sharif","arwa"],"note":"هيرفي الرئيسي والشخص البديل يكون جيمي والتشيك في الصالة عن طريق شريف وفي حال الاوف يكون اروى","s":["تجهيز كروت الصلاحية والسعرات وتاريخ الإنتاج.","التأكد من عدم وجود ملصقات المورد.","مراجعة كل صينية قبل العرض.","تصوير الصواني بعد وضع المنتج وعرضها في الصالة.","تحديث تاريخ الصلاحية كل أسبوع أو عند تعبئة جديدة.","يمنع عرض أي صينية بدون كرت صلاحية.","يجب استخدام الاستكرات المعتمدة فقط.","يتم مراجعة تاريخ الإنتاج والانتهاء يومياً.","تُغيَّر الحشوات كل أسبوع للصواني.","يتم التشييك على تغليف الصواني يومياً."],"r":{"sharif":"p","arwa":"b"}},
+  {"t":"التشيك على استلام حلا الزفه بالالوان والاعداد","o":["mahmoud","sharif"],"note":"البديل شريف","s":["فتح الطلب المعتمد ومراجعة تفاصيله: نوع الحلا، عدد القطع، الألوان المطلوبة.","فصل كل نوع من الحلا على حدة لتسهيل العد والتأكد من عدم وجود خلط بين الأنواع.","العد اليدوي للقطع.","مطابقة الألوان.","التأكد من الحشوات ومطابقتها.","توثيق أي اختلافات.","في حال وجود اختلاف في اللون أو العدد أو النوع، يتم تصوير القطع وتوثيق الملاحظة مع التاريخ والوقت.","التأكد من تصميم اللوقو ووضوح جودته.","التواصل مع المورد مباشرة في حال وجود خلل لتحديد الإجراء المناسب (استبدال، تعديل، أو تعويض).","توقيع الاستلام على الفاتورة وإدخالها لقسم التحضير لوضع أكواد الأصناف ورفعها للحسابات."],"r":{"mahmoud":"p","sharif":"b"}},
+  {"t":"التشييك على طريقة صف الصوانى قبل خروجها للعميل من حيث (شكل الترتيب - التغليف)","o":["faisal","mahmoud","zakaria","sharif"],"note":"جواد رئيسي ويوم الأوف يكون جيلورد البديل ويجب التشييك من فريق المبيعات عند التسليم","s":["مراجعة الطلب النهائي والتأكد من عدد الصواني المطلوب تسليمها.","التوجه إلى منطقة التحضير قبل وقت التسليم المحدد.","فحص طريقة صف الصواني على الطاولة أو داخل البوكسات.","التأكد من أن الترتيب يعكس الشكل المعتمد للعرض أو التقديم.","مراجعة التغليف الخارجي لكل صينية (ورق، غطاء، ملصق).","التأكد من نظافة الصواني وعدم وجود أي آثار غير مرغوبة.","التحقق من ثبات العناصر داخل الصينية وعدم تحركها أثناء النقل.","توثيق أي ملاحظات أو خلل في الترتيب أو التغليف.","إبلاغ الفريق المسؤول فوراً لتعديل أي خلل قبل التسليم.","اعتماد الصواني الجاهزة وإعطاء الإذن بخروجها للعميل."],"r":{"faisal":"p","mahmoud":"p","zakaria":"p","sharif":"p"}},
+  {"t":"جدولة الاشرافات وإرسالها والتنسيق مع المشرفات وإعداد قائمة بجميع تفاصيل المناسبة","o":["namareq","shima"],"note":"البديل نمارق","s":["استخراج قائمة المناسبات المجدولة خلال الشهر.","وضع أعداد الصواني للحالي والمالح وحلا الزفة وفازات طاولات الخدمة وموقع المناسبة، وإضافة عاملة أو من دون حسب الحاجة.","إرسال جدولة الإشراف للمشرفات قبل 3 أيام من المناسبة الداخلية، وقبل 5 أيام إذا كانت خارج الرياض.","تجهيز نص الرسالة الرسمي الذي يوضح وقت ومكان حضور المشرفة وإرساله للعميلة قبل يوم أو يومين من المناسبة.","يمنع إرسال الرسالة قبل التأكد من جدول المشرفة.","مراجعة جدولة الإشراف كل يوم وتحديثها في حال الإضافة أو الإلغاء.","تعديل أعداد الصواني وإبلاغ المشرفات بالتعديل المطلوب حتى لو تم الجدولة والإرسال من قبل.","يمنع تأخير إرسال الرسالة عن الموعد المحدد.","توضيح أي ملاحظة أو تعليمات في خانة الملاحظات لوضوحها للمشرفة.","التأكد من تاريخ المناسبة ومطابقته في النظام للتأكد من الموعد الفعلي."],"r":{"namareq":"b","shima":"p"}},
+  {"t":"التواصل مع العميل ومندوب التوصيل بخصوص (اللوكيشن - والتوصيل - سداد الفاتوره)","o":["zakaria","sharif"],"note":"يتم طلب اللوكيشن عن طريق واتساب خدمة العملاء قبل المناسبة ب 5 ايام، ويتم التاكد من وصول الحوالة وجدولة التوصيل والارسال عن طريق زكريا الى مسؤول الخدمات والمساندة للتوزيع بين المناديب. البديل شريف","s":["التواصل مع العميل لأخذ لوكيشن المناسبة مع التأكيد على الموعد باليوم والتاريخ عند الإرسال.","وضع اللوكيشن مع أعداد الصواني ورقم العميل بالتاريخ المطلوب في شيت التوصيل للجدولة.","التأكد من سداد كامل المبلغ قبل خروج الطلب للطلبات الداخلية والخارجية.","في حال خرج الطلب ولم يُحوّل المبلغ كاملاً، يُبلّغ السائق بعدم إنزال الطلب إلا بعد التواصل مع المسؤول من فريق المبيعات والتأكد من دفع المتبقي.","توضيح حالة الطلب إذا كان خارج الرياض، مثال التوصيل إلى الدمام مع الانتظار إلى نهاية المناسبة لأخذ الصواني والعودة بها.","إبلاغ العملاء بأوقات التوصيل من 4 إلى 7:30، وفي حال خارج الرياض يتم الاتفاق على وقت محدد.","عند إرسال اللوكيشن يجب فتح اللنك والتأكد أنه يعمل والموقع صحيح.","لطلبات خارج المملكة (الكويت، قطر، بقية دول الخليج المعتمدة) يكون الدفع عن طريق رابط دفع مباشر، والرسوم واحدة بانتظار أو من دون.","جدولة التوصيل قبل يوم وقبل الساعة 6 مساءً؛ وأي توصيل بعد 6 يُرجع أولاً لمسؤول الخدمات والمساندة لأخذ الإمكانية.","التأكد دائماً أن تبريد السيارة يعمل بدرجة معتمدة من 18 إلى 20 مئوية وأن السيارة نظيفة ورائحتها جيدة."],"r":{"zakaria":"p","sharif":"b"}},
+  {"t":"الرد على اتصالات الهاتف والواتساب","o":["namareq","shima"]},
+  {"t":"الرد على واتساب خدمة العملاء عند طلب العميل تعديل الصف والحشوات على الصواني","o":["namareq","shima"],"note":"التعديل عن طريق جواد، مع متابعة من قِبَل خدمة العملاء، وإبلاغ فريق التحضير لإجراء التعديلات المطلوبة"},
+  {"t":"العينات للعملاء والتعويضات والهدايا مع التأكد من رقم الفاتورة","o":["namareq","shima"],"note":"(البديل شيماء) ويتم التسجيل في النموذج عن طريق جواد (والبديل جيلورد)","s":["مراجعة الطلب أو الحالة التي تستدعي تقديم عينة أو تعويض أو هدية.","التأكد من وجود رقم الفاتورة المرتبط بالعميل أو الحالة.","التحقق من نوع المنتج المطلوب تقديمه (عينة – تعويض – هدية).","تحديد الكمية المناسبة حسب سياسة المعرض أو التوجيه الإداري.","تجهيز المنتج في بوكس مناسب يراعي الشكل والجودة.","تثبيت بطاقة توضح نوع الإرسال (عينة – تعويض – هدية) ورقم الفاتورة.","توثيق العملية في سجل خاص بالهدايا والتعويضات.","التنسيق مع قسم التوصيل لتسليم المنتج للعميل.","إبلاغ الإدارة أو القسم المختص بإتمام العملية.","حفظ نسخة من التوثيق للرجوع إليها عند الحاجة."],"r":{"namareq":"p","shima":"b"}},
+  {"t":"الكتابه على الكروت وتصميم اللوجو الخاص بحلى الزفه والتوزيعات والأكريلك","o":["namareq","shima","shahd"],"note":"الرئيسي نمارق البديل يوم الاوف شهد. يتم المتابعه مع العميل قبل 5 ايام من المناسبه حيث ترسل الى المعرض والمعرض يقوم بطلبها من المطبخ","s":["استلام تفاصيل العبارة التي يريد العميل طباعتها على كروت الإهداء.","تحرير النص وطباعته وتصوير الكارد وإرساله للعميل أو تسليمه في المعرض للمعاينة والاعتماد.","عمل تصميم للحروف أو الأسماء في حال طلب العميل وكان ذلك ممكناً.","البحث عن تصاميم جاهزة من الإنترنت وإرسالها للعميل كخيار في حال كان مناسباً له.","وضع تصاميم اللوقو لحلا الزفة أو الأكرليك في ملف PDF بعد الاعتماد لوضوح الدقة."],"r":{"namareq":"p","shima":"p","shahd":"b"}},
+  {"t":"المسؤول عن المنيو (من حيث مطابقته لآخر التحديثات)","o":["faisal","mahmoud"],"s":["مراجعة الأصناف المعروضة في الصالة (صواني، شوكليت، مالح).","مطابقة كل صنف مع ما ورد في المنيو.","توثيق أي نقص أو اختلاف ورفعه لقسم الجودة وإبلاغهم بطلب تصوير المنتج لوضعه في المنيو.","تحديث العرض حسب المنيو المعتمد.","تصوير المنتجات من جديد في حال وجود تغيير في الشكل أو اللون.","يمنع عرض أي صنف غير مدرج في المنيو المعتمد.","مراجعة المنيو والتأكد من إضافة الأصناف الحديثة.","يمنع تعديل المنيو دون موافقة الإدارة.","توضع الأصناف الحديثة في قسم (جديد NEW) لمدة 4 أشهر من تاريخ إصدار المنتج.","توضيح مدة صلاحية المنتجات في المنيو (قسم الجودة والصلاحية)."]},
+  {"t":"المسؤول عن متابعة نظافة المكتب وتشغيل الشاشة بشكل يومي","o":["arwa","rahaf"],"note":"البديل رهف","s":["متابعة نظافة الأرضيات والأسطح بشكل دوري خلال الوردية.","تنظيف أي منطقة تتسخ فوراً دون تأخير.","التأكد من توفر أدوات التنظيف في أماكنها.","تنظيف دورات المياه والمعرض حسب الجدول.","يمنع ترك أي منطقة متسخة أثناء الوردية.","نظافة الجاهز بالمكتب والطاولات والشاشة.","نظافة الزجاج الخارجي للمكتب من الداخل والخارج.","نظافة المرآة الداخلية لديكور المكتب والباركية.","نظافة الكنب والوسادات والستائر وغسلها كل 3 أو 6 أشهر أو عند الحاجة.","تشغيل المبخرة عند فتح المعرض وعند منتصف الدوام في حال الحاجة."],"r":{"arwa":"p","rahaf":"b"}},
+  {"t":"ايقاف اخذ طلبات من العملاء في حال الوصول الى الطاقه الاستعابيه القصوى","o":["faisal","mahmoud"],"note":"يتم مراجعة الاعداد بواسطة عبدالجواد والرفع لمدير المعرض لاتخاذ القرار","s":["الحد الأقصى هو تجهيز 3 أواني في الساعة لكل شخص يعمل في التحضير.","3 × عدد موظفي غرفة التحضير (ما عدا المشرف) × مجموع ساعات العمل الأساسية والإضافية (بما لا يتجاوز 14 ساعة للموظف يومياً) = الطاقة الاستيعابية القصوى.","يُشعر مشرف التحضير مدير المعرض عند الوصول إلى الطاقة الاستيعابية القصوى.","مدير المعرض صاحب القرار بالإيقاف من عدمه، وعلى هذا الأساس يُعمل إعلان للفريق بالإيقاف مع تحديد اليوم والتاريخ.","رصد عدد الطلبات والمناسبات وأعداد الأواني وكميات الشوكليت، مع احتساب نوع المنتج (شوكليت، طازج، مالح).","مراجعة المساحات المتاحة في غرف التحضير لضمان عدم التكدس أو التأثير على جودة العمل.","تخصيص وقت لإعداد الصواني التي تُحضّر في نفس اليوم (المنتجات الطازجة).","إبلاغ العميل: نعتذر، لا يمكننا استقبال طلبات جديدة حالياً بسبب بلوغ الطاقة الاستيعابية وكثرة الطلبات. نقدر تفهمكم ونتطلع لخدمتكم قريباً.","في حال وجود طلب مؤكد سابق، يمكن للعميل إضافة كمية أو منتجات إلى نفس الطلب.","إذا كان لدى العميل فاتورة مفتوحة أو طلب مؤجل بدون تاريخ وتم التواصل لتحديد موعد التنفيذ، يُقبل الطلب."]},
+  {"t":"مراجعة الطلبات بداية كل يوم للطلبات التي تم إنشاؤها في اليوم السابق للتأكد من اكتمال المعلومات وموافقتها للسياسات المعتمدة.","o":["mahmoud","zakaria","sharif","shima","shahd"],"note":"يجب المراجعة من الجميع لجميع الفواتير التي تم انشاؤها وارسالها على الواتساب","s":["مراجعة الطلبات التي تم إنشاؤها في اليوم السابق.","التأكد من اكتمال جميع البيانات المطلوبة.","مطابقة الطلبات مع السياسات المعتمدة.","توثيق أي نقص أو ملاحظات.","تحديث حالة الطلب حسب التعديلات.","يمنع تنفيذ أي طلب غير مكتمل البيانات.","توثيق أي تعديل في الطلب.","التأكد من تطابق الطلب مع الفاتورة.","يمنع حذف أو تعديل أي صنف طازج دون الرجوع إلى المدير المباشر.","مراجعة سجل الطلبات أسبوعياً وتحديث الكميات."]},
+  {"t":"تجميع وفك والمحافظة على بوكس التصوير","o":["faisal"],"note":"بمتابعة وطلب من فيصل","s":["تجهيز بوكس التصوير عند الاحتياج.","التأكد من نظافة البوكس قبل الاستخدام.","تركيب العناصر الداخلية (خلفية، قاعدة، إضاءة) بشكل آمن.","ضبط الإضاءة والزوايا حسب نوع التصوير المطلوب.","استخدام البوكس لتصوير المنتجات وفق الجدول أو الطلبات الخاصة.","تفريغ البوكس من العناصر بعد انتهاء التصوير.","تنظيف البوكس من الداخل والخارج بعد كل استخدام.","فك الأجزاء القابلة للفك وتخزينها بطريقة منظمة.","حفظ البوكس في مكان مخصص بعيداً عن الرطوبة أو التلف.","توثيق حالة البوكس بشكل دوري وإبلاغ القسم المختص بأي خلل."],"r":{"faisal":"p"}},
+  {"t":"تجهيز ونظافة المصلى","o":["faisal","mahmoud"],"note":"صابر وصغير التشييك على النظافة وفتح واغلاق المصلى بشكل يومي متابعة فيصل","s":["تنظيف السجادات تبع المصلى.","تجهيز السجادات عند اقتراب أوقات الصلاة.","ترتيب المصلى بشكل منظم.","غسل السجادات كل 3 أو 6 أشهر.","طي السجادات بعد الانتهاء من الصلاة بدقائق.","يمنع استخدام المصلى لأي غرض غير الصلاة."]},
+  {"t":"تدريب الموظفين الجدد","o":["faisal","mahmoud"],"note":"توجيه الموظف الجديد الى احد الزملاء والزامه بعدم البيع بمفرده حتى يتجاوز المراحل المعتمدة (المراحل مذكوره في الدليل التشغيلي)","s":["إعداد خطة تدريب واضحة حسب المهام التشغيلية.","تقديم شرح نظري للسياسات والإجراءات المعتمدة.","قراءة الدليل التشغيلي والاطلاع على جميع السياسات.","الاطلاع على المنيو ومعرفة مدة صلاحية المنتجات وسعة الصواني والفازات وقيمة التأمين ورسوم الإيجار.","متابعة أحد الزملاء السابقين أثناء البيع وخدمة العميل وملازمته.","متابعة أداء الموظف خلال فترة التدريب.","اختبار الموظف بأسئلة من الدليل التشغيلي تخص السياسات.","توثيق أي ملاحظات أو صعوبات يواجهها الموظف.","مراجعة خطة التدريب أسبوعياً.","تقييم الموظف قبل انتهاء فترة التجربة."]},
+  {"t":"تسليم طلبات العملاء في موعدها والإبلاغ عن أسباب التأخير لعلاجها.","o":["mahmoud","zakaria","sharif"],"s":["تأكيد موعد التسليم بدقة عند استلام الطلب.","تسجيل الطلب ضمن جدول الجاهزية حسب التاريخ والوقت المطلوب.","متابعة حالة الطلب بشكل دوري لضمان سير العمل دون تأخير.","التنسيق المسبق مع قسم الإنتاج والتغليف لضمان الجاهزية.","التواصل مع قسم التوصيل لتأكيد توفر المركبة والوقت المحدد.","في حال وجود أي تأخير محتمل، يجب إبلاغ الإدارة فوراً.","بعد توجيه الإدارة يُبلّغ العميل مباشرة وبأسلوب مهني عن سبب التأخير مع تقديم توقيت بديل واضح.","تقديم اعتذار رسمي عند الحاجة مع عرض تعويض رمزي إن لزم (حسب توجيهات الإدارة).","تسجيل سبب التأخير في سجل خاص لمراجعة الحالات ومعالجتها مستقبلاً.","مراجعة دورية لأسباب التأخير واقتراح حلول عملية لتفادي تكرارها."]},
+  {"t":"تصوير الصوانى وارسالها على واتس العميل وجروب الجوده والتأكد من تنفيذ تعديلاتهم عليها ان وجدت والتعديلات المطلوبه من مدير الجوده","o":["namareq","shima","shahd"],"note":"التصوير من قبل المعرض بحيث ترسل على قروب مع خدمة العملاء. مسؤولية خدمة العملاء ارسال التعديل للعملاء شهد اساسي، نمارق يوم الاوف. يتم ارسال التعديلات للتحضير عبر القروب مسؤولية عبدالجواد او من ينوب عنه الاطلاع عليها وتعديلها. في حال عدم التجاوب يتم التنسيق مع موظفه خدمة العملاء الموجوده في المعرض. تعديلات مدير الجوده في الصواني يتم الاطلاع عليها قبل ارسال الصور للعملاء ويتم تعديلها ومن ثم يتم ارسالها للعملاء. مسؤولية شهد عدم ارسالها والتاكد من تنفيذها ونمارق نيابه عن شهد، اما مسؤولية شيماء متابعة التعديل في المعرض ونمارق يوم الاوف تبع شيماء","s":["تجهيز الصواني حسب الطلب والمواصفات.","تصويرها بجودة عالية من زوايا متعددة.","إرسال الصور للعميل عبر واتساب.","إرسال الصور أيضاً لقروب الجودة للمراجعة.","تنفيذ أي تعديلات مطلوبة من العميل أو الجودة.","إعادة تصوير الصواني بعد التعديل.","يمنع إرسال صور غير واضحة أو غير مكتملة.","يجب التأكد من وقت إرسال الصور؛ وفي حال كانت المنتجات طازجة تُرسل في نفس اليوم.","يجب التأكد من تطابق الصور مع الطلب الفعلي.","تُراجع الصور من قبل مشرفة الجودة."],"r":{"namareq":"b","shima":"p","shahd":"p"}},
+  {"t":"تغيير منتجات العرض أسبوعيا (للمالح) - بدايه كل شهر (للشوكليت) وتغيير المنتجات التي تحتاج تغيير بشكل دوري بسبب جودتها","o":["sharif","arwa"],"note":"البديل اروى","s":["تغيير منتجات العرض الخاصة بالمالح كل أسبوع.","مراعاة التنويع بين الأصناف وتدويرها حسب جودة المنتج.","تحديث أصناف الشوكليت وتغييرها بداية كل شهر.","تغيير المنتجات التي تتأثر جودتها بشكل دوري.","التشييك على أن المنتج مطابق للمنيو ونفس الشكل.","يُستبدل أي منتج تظهر عليه علامات انخفاض الجودة فوراً.","الطلب من المطبخ في حال احتياج عينات لمنطقة العرض على الفور.","الحفاظ على ترتيب المنتجات وقطع الرخام بشكل مستوٍ ومنسق.","التشييك على نظافة منطقة العرض من الداخل.","تغيير الرخام في حال كانت جودته غير مناسبة."],"r":{"sharif":"p","arwa":"b"}},
+  {"t":"تقديم تقرير شهري لمدير المعرض بالمشاكل التي تواجه الفريق مع اقتراحات لحلها (كل نهاية الشهر)","o":["mahmoud","zakaria","sharif","namareq","shahd"],"s":["جمع ملاحظات الفريق طوال الشهر من الاجتماعات اليومية.","تصنيف المشاكل حسب نوعها (تشغيلية، فنية، تنظيمية، بشرية).","اقتراح حلول عملية لكل مشكلة بناءً على الواقع التشغيلي.","مراجعة النقاط مع الإدارة.","حفظ نسخة في ملف خاص بالتقارير الشهرية.","متابعة تنفيذ الحلول المقترحة وتوثيق نتائجها.","يجب أن يكون التقرير موضوعياً ويعكس الواقع بدقة.","تُشارك نسخة من التقرير مع الفريق بعد اعتماده.","توثيق أي مشكلة متكررة بشكل منفصل."]},
+  {"t":"رفع وانزال ستائر المعرض في بداية ونهاية الدوام ووقت البريك","o":["mahmoud","zakaria"],"note":"زكريا اساسي ومحمود يوم الاوف","s":["رفع الستائر في بداية الدوام.","إنزالها أوقات بريك الصلاة.","رفعها مجدداً بعد البريك.","إنزالها في نهاية الدوام.","التأكد من سلامة الستائر وعدم وجود تلف.","تنظيف الستائر بشكل دوري.","رفع أي ملاحظات لقسم الصيانة.","توثيق أي تلف أو خلل فوراً.","مراجعة حالة الستائر أسبوعياً."],"r":{"mahmoud":"b","zakaria":"p"}},
+  {"t":"صلاحية احتساب العمل الاضافي (الاوفر تايم)","o":["faisal"],"s":["مراجعة ساعات العمل الفعلية للموظف.","تحديد عدد الساعات الإضافية حسب الاحتياج من قبل مشرف التحضير وإبلاغ مدير المعرض.","تعبئة نموذج احتساب الأوفر تايم.","رفع طلب الأوفر تايم على جسر بشكل مباشر.","يمنع احتساب أي ساعة إضافية غير موثقة.","مراجعة السجلات شهرياً.","التأكد من الإنتاجية مقارنة بالساعات الإضافية وعدم التهاون أو التباطؤ.","توثيق تسليم طلبات خارج الرياض."]},
+  {"t":"طلب حلى الزفه من الموردين","o":["faisal","mahmoud"],"note":"الادخال في شيت حلا الزفه من جميع الفريق قبل المناسبه ب 5 ايام. المراجعه والارسال من قبل محمود","s":["مراجعة جدول المناسبات التي تشمل حلا الزفة.","وضع حلا الزفة في الشيت من قبل كل موظف قبل 5 أيام من المناسبة مع العدد ورقم الفاتورة واللون والتاريخ والملاحظات وإضافة اللوقو.","إرسال الطلب ووضعه في الشيت مع إرفاق اللوقو وتوضيح العدد والملاحظات وتاريخ الاستلام وتأكيد الموعد.","فحص الحلا عند الاستلام والتأكد من جودته.","توثيق الطلب ومطابقته بالشكل والعدد والتوقيع على الفاتورة.","توثيق أي تأخير أو نقص في الاستلام.","إرسال اللوقو في ملف PDF باللون الأسود المعتمد للوضوح والدقة.","توضيح في خانة الملاحظات للمورد إذا كان الطلب خارج الرياض (مثال: الدمام) بتجهيز الطلب الساعة 9 صباحاً لاستلامه من معمل المورد عن طريق مندوب التوصيل.","التأكد من استلام صمغ الحلا لتثبيت اللوقو مع كل طلبية.","إبلاغ المورد مباشرة في حال وجود خطأ في الطلبية للإرجاع والتعديل في أسرع وقت."]},
+  {"t":"طلب رد التأمين من الماليه (رد التأمين كاش موقوف نهائيا ويكون تحويل بنكي فقط)","o":["faisal","mahmoud","zakaria","sharif","namareq","shima"],"note":"يتم استلام الصواني من فريق الصالة على قروب التامينات رقم الطلب وحالة الصواني. في حال وجود مشكله في الصواني يتم ذكر المشكله مع ارفاق صور وقيمة الخصم وقيمة المبلغ الذي يرجع للعميل ومن ثم يذكر اسمه في نهاية الرساله، وتحتوي على تفاصيل المبلغ ورقم الفاتورة. بعد ذلك يتم متابعة العملية من خلال خدمة العملاء، حيث يتم الارسال الى العميل وطلب المعلومات وارسالها إلى مجموعة الحسابات لضمان تنظيم العملية مع متابعة ارسال المبلغ للعميل","s":["مراجعة سجل الطلبات المستحقة لرد التأمين.","التأكد من استلام الصواني بحالة سليمة.","جمع بيانات العميل البنكية (الاسم، رقم الحساب، البنك).","التشييك على نموذج طلب رد التأمين المعتمد.","إرسال المعلومات البنكية لقسم المالية ومتابعة تنفيذ التحويل البنكي.","توثيق حالة الرد في سجل التأمين.","يمنع رد التأمين نقداً تحت أي ظرف.","التأكد من صحة البيانات البنكية قبل الإرسال، وطلب إيصال من الحسابات لإرساله للعميل.","مراجعة سجل التأمين كل 3 أيام.","رفع تقرير شهري عن حالات التأخير وعدم رد الصواني لتعديل الأعداد من المستودع."]},
+  {"t":"فتح وغلق المعرض من بداية الدوام حتى نهايته","o":["mahmoud","zakaria"]},
+  {"t":"متابعة تقييم العملاء وارسال التقييمات للعملاء","o":["namareq","shahd"],"note":"عمل فلتر على السيستم للطلبات التي تم تسليمها خلال يومين ماضيين واتباع آلية ارسال التقييم كما في الدليل التشغيلي والرفع بأي ملاحظة على قروب خدمة العملاء، ومتابعة الشكوى على النموذج المخصص حتى الاغلاق"},
+  {"t":"متابعة شركة مكافحة الحشرات","o":["faisal","mahmoud"],"s":["التواصل مع الشركة لتأكيد الموعد والموقع.","زيارة شهرية مع توثيق كل زيارة.","تكون الزيارة الساعة 12 ظهراً قبل فتح المعرض بساعات.","المتابعة كل شهر، وفي حال تأخير الزيارة يتم التواصل معهم بشكل مباشر.","التأكد من استخدام المواد المصرح بها والالتزام بالسلامة.","توثيق الزيارة لكل شهر في نموذج الشيك ليست تبع مدير المعرض.","تقييم أداء الشركة ورفع تقرير مختصر للإدارة.","مراقبة النتائج خلال الأيام التالية.","التواصل مع الشركة في حال ظهور أي مؤشرات غير مرغوبة."]},
+  {"t":"متابعة ورفع تقرير للمالية بالصواني التي تأخر ردها عن 3 ايام ولم يستجب العملاء لاتصالات المعرض","o":["namareq","shima"],"note":"جواد رئيسي لجرد الصواني في حال الاوف يكون جيلورد، مع مراجعه شيت التامين بشكل يومي ومقارنته بالطلبات على السستم وابلاغ خدمة العملاء للتواصل مع العميل","s":["تحديد الصواني التي لم يتم الرد عليها خلال 3 أيام من التسليم.","التأكد من أن المعرض قام بمحاولات التواصل مع العميل.","توثيق عدد المحاولات وتاريخ كل اتصال.","إعداد قائمة بالصواني المتأخرة حسب التاريخ والاسم.","رفع تقرير مفصل لقسم المالية يتضمن الكميات والتواريخ.","توضيح حالة كل طلب (لم يتم الرد – رفض – تأجيل).","اقتراح الإجراء المناسب (خصم – إعادة – متابعة إضافية).","التنسيق مع المعرض لمتابعة أي ردود لاحقة من العملاء."],"r":{"namareq":"p","shima":"p"}},
+  {"t":"متابعه طلبات المنتجات المستوردة ومتى يتم توفيرها ومتى يتم ايقافها","o":["faisal","mahmoud"],"note":"فيصل رئيسي ومحمود يوم الأوف في حال الحاجة للمتابعة","s":["مراجعة قائمة المنتجات المستوردة المعتمدة.","متابعة طلبها قبل فترة لتصل من 6 إلى 8 أسابيع.","توثيق مواعيد التوريد الفعلية لكل منتج.","متابعة المخزون وإيقاف بيع المنتج في حال تبقّت كمية قليلة.","وضع كمية احتياطية لكل صنف.","رفع تقرير شهري عن حالة المنتجات المستوردة.","تُراجع الكميات من قبل المطبخ ويُشعرنا بالكمية المتبقية لكل صنف.","التواصل مع المشتريات في حال احتياج كميات جديدة.","إبلاغ العملاء الذين ليس لديهم تاريخ محدد (مثل طلبات استقبال المواليد) باختيار أصناف بديلة عند تحديد موعد المناسبة وكان المنتج غير متوفر."],"r":{"faisal":"p","mahmoud":"b"}},
+  {"t":"مراجعة الطلب الذي يتم إلغاؤه من قبل العميل للتأكد من عدم تعرض سوار لأي ضرر بسبب الإلغاء واضافة الالغاء في الملاحظات الداخليه مع ذكر السبب","o":["faisal","mahmoud","zakaria","sharif","namareq","shima","shahd"],"note":"مسؤولية الشخص الذي يتواصل مع العميل، ويجب التاكد من مشرف التحضير في حال امكانية الغاء بعض الاصناف التي يمكن بيعها او وضعها على طلبات اخرى والاصناف التي لايمكن التصرف فيها نظرا لمدة صلاحيتها ويجب ابلاغ مدير المعرض لتوجيه بالقرار ومن ثم الإرسال للمالية برد المبالغ بعد مراجعة الأسباب وما ينتج عن الإلغاء","s":["التواصل مع العميلة وسؤالها عن سبب الإلغاء.","مراجعة تفاصيل الطلب بالكامل.","فحص حالة المنتجات ومدة صلاحيتها؛ وإذا لا يوجد تضرر يتم الإلغاء واسترداد المبلغ كاملاً.","التأكد من عدم تعرض الشركة لأي ضرر بسبب الإلغاء.","توثيق الحالة في الواتساب وإبلاغ الحسابات.","يمنع حذف الطلب دون مراجعة حالة المنتج.","يجب توثيق سبب الإلغاء بدقة.","يُراجع الطلب من قبل مدير المعرض ويتخذ القرار.","إذا كان الإلغاء قبل 5 أيام ويوجد أصناف تم تجهيزها، تُخصم قيمتها ويُبلَّغ العميل بذلك.","التأكد من وجود دفعة أو عربون في السستم وإرسال الرسالة المعتمدة للإلغاء للعميل."]},
+  {"t":"مراجعة الطلبيات المتوقع تسليمها بعد 4 ايام (بشكل يومي) للتأكد من طلبها من الموردين او الصيانة والتواصل مع العملاء للاستفسار عن اي شئ غير واضح او طلب خاص","o":["mahmoud","zakaria","sharif","namareq","shima","shahd"],"note":"متابعة الطلبات المتوقعة تسليمها بعد 4 أيام والتأكد من طلبها من الموردين أو تجهيزها. ومراجعة حجوزات الصواني والتأكد سلامتها ومن توفر العدد المطلوب واسترجاع صواني التأمين بالتنسيق مع جواد. في يوم الاوف يتم التنسيق مع جيلورد لاستكمال المهام. مراجعة تفاصيل حلا الزفة والمشروبات من خلال محمود، ومراجعة التوصيل وتحديث الجدولة عن طريق زكريا، والتواصل مع العملاء يتم بواسطة نمارق لمراجعه اي تفاصيل او استفسارات غير واضحه","s":["استخراج قائمة الطلبيات المجدولة للتسليم بعد 4 أيام.","مراجعتها يومياً للتأكد من جاهزيتها.","التأكد من أن الطلب تم توجيهه للمورد أو قسم الصيانة.","التواصل مع الموردين للتأكيد على موعد التسليم.","مراجعة تفاصيل الطلب للتأكد من وضوحها.","التواصل مع العميل للاستفسار عن أي ملاحظات أو طلب خاص.","توثيق أي تعديل أو إضافة على الطلب.","تحديث حالة الطلب في النظام الداخلي.","التنسيق مع فريق التحضير لتجهيز الطلب في الوقت المناسب.","رفع تقرير يومي للإدارة بحالة الطلبيات القادمة."]},
+  {"t":"مراجعة الطلبيات في نهايه الدوام للتأكد من تسجيل جميع العمليات بشكل صحيح من بايمنت وكميات.. الخ","o":["faisal","mahmoud","zakaria","sharif","namareq","shima","shahd"],"note":"يلزم مراجعة جميع الموظفين على كل الفواتير والعمليات والتعديلات","s":["فتح النظام واستخراج قائمة بجميع الطلبيات المنفذة خلال اليوم، والطلبات القادمة خلال 3 أيام.","مراجعة تفاصيل كل طلب: الكمية، النوع، السعر، طريقة الدفع، تاريخ التسليم، والتأكد من عدم وجود تكرار أو نقص.","التأكد من حالة الطلب إن كان له تاريخ محدد أو على الاتصال.","التأكد من أن جميع الطلبات المدفوعة سُجلت في نظام الدفع (بايمنت)، ومطابقة المبالغ مع الفواتير.","التحقق من الكميات في حال كانت الصينية مكررة مرتين (الكمية دبل).","التأكد إن كان الطلب توصيلاً أو استلاماً مع تحديد الحي أو المنطقة، والتأكد من وضع أوقات التوصيل المعتمدة في الفاتورة.","تحديد الطلبات التي أُلغيت أو لم تُنفذ بالكامل وتوثيق أسباب الإلغاء أو التعديل.","التأكد من تسجيل الملاحظات في السستم.","التأكد من مطابقة حجوزات الصواني في الشيت بنفس التاريخ.","مراجعة الفاتورة والأصناف قبل إرسالها للعملاء."]},
+  {"t":"مسئولية كاميرا التصوير وتوفير العينات المطلوبه للتصوير","o":["faisal"],"s":["تجهيز الكاميرا وبوكس التصوير قبل بدء التصوير.","توفير العينات المطلوبة من المطبخ.","ضبط الإضاءة والخلفية.","تصوير العينات بجودة عالية.","تعديل جودة الصور وعمل تحسينات بسيطة بالفوتوشوب لبعض الصور عند الحاجة.","مراجعة الصور من قبل مشرفة الجودة.","رفع الصور على المنيو مع معلومات المنتج.","يجب توثيق أي خلل أو تلف في الكاميرا.","يجب التأكد من توفر العينات قبل موعد التصوير."]},
+  {"t":"مطابقة محتويات المنيو في صاله العرض (صواني وشوكليت ومالح)","o":["faisal","mahmoud"],"s":["مراجعة الأصناف المعروضة في الصالة (صواني، شوكليت، مالح).","مطابقة كل صنف مع ما ورد في المنيو.","توثيق أي نقص أو اختلاف ورفعه لقسم الجودة وإبلاغهم بطلب تصوير المنتج لوضعه في المنيو.","تحديث العرض حسب المنيو المعتمد.","تصوير المنتجات من جديد في حال وجود تغيير في الشكل أو اللون.","يمنع عرض أي صنف غير مدرج في المنيو المعتمد.","مراجعة المنيو والتأكد من إضافة الأصناف الحديثة.","يمنع تعديل المنيو دون موافقة الإدارة.","توضع الأصناف الحديثة في قسم (جديد NEW) لمدة 4 أشهر من تاريخ إصدار المنتج.","توضيح مدة صلاحية المنتجات في المنيو (قسم الجودة والصلاحية)."]},
+  {"t":"تجهيز بوكس التذوق مع تسجيل الكميات في الشيت","o":["sharif"],"note":"روينا رئيسي و يوم الاوف جيلورد اشراف شريف","s":["تجهيز الأصناف يومياً للتذوق.","تجهيز البوكس حسب المعايير المعتمدة.","تسجيل الكميات في الشيت المخصص.","وضع كمية كل صنف حسب الكمية المعتمدة والمقدرة.","وزن كل صنف وعدد القطع له.","وضع الأصناف الطازجة سواء المرسلة من المطبخ أو الفائضة بعد الصف.","تحديث الشيت نهاية اليوم وإرجاع الكميات المتبقية وتسجيل الكميات النهائية بعد التذوق.","إضافة أصناف جديدة على النموذج.","يجب تحديث الشيت يومياً قبل التعبئة وبعدها.","جرد شهري لكميات التست لمعرفة الكميات الإجمالية لكل شهر."],"r":{"sharif":"p"}},
+  {"t":"تسجيل شكاوي العملاء والملاحظات الداخليه ومتابعتها على ان تنتهي خلال 3 ايام عمل","o":["namareq","shahd"],"note":"يتم اخذ التفاصيل من العميل عن طريق خدمة العملاء للتحقق منها من قبل الجودة ويتم رفعها الى مدير المعرض. ويتم مراجعة الشكاوي بشكل نهائي من قبل الادارة وتسجيل التعليق عليها من قبل المدير العام ويتم اقفال جميع الشكاوي بشكل نهائي خلال 3 ايام (البديل شهد فقط تاخذ الشكوى تسلمها لنمارق وقت دوامها)","s":["استقبال الشكوى من العميل عبر القنوات الرسمية.","إرسال الرسالة المخصصة للشكاوى.","توثيقها في النموذج المخصص مع توثيق اسم الموظف المسؤول عن الشكوى.","وضع المشكلة أو المقترح من قبل خدمة العملاء.","وضع إفادة مدير المعرض وإفادة مسؤول الجودة وتحويلها للجهة المختصة.","التواصل مع العميل لتوضيح الإجراء المتخذ.","يجب حل الشكوى خلال 3 أيام.","انتظار توجيه الإدارة لاتخاذ القرار.","إبلاغ العميل بالإجراء المتخذ.","إرسال رسالة تقييم لمدى رضا العميل عن الحل المقدم له."],"r":{"namareq":"p","shahd":"b"}},
+  {"t":"المسؤول عن تصوير صواني العرض بشكل يومي، وإرسالها إلى قروب خدمة العملاء مع ذكر السعة، والسعر، والقياسات، والتأكد من وضع تاريخ الإنتاج والانتهاء، وباركود الصلاحية، إضافة إلى التحقق من جودة التغليف والصف.","o":["namareq","shima"],"note":"ويوم الاوف نمارق","s":["تجهيز كروت الصلاحية والسعرات.","التأكد من عدم وجود ملصقات المورد.","مراجعة كل صينية قبل العرض.","تصوير الصواني بعد وضع المنتج وعرضها في الصالة.","تحديث تاريخ الصلاحية كل أسبوع أو عند تعبئة جديدة.","يمنع عرض أي صينية بدون كرت صلاحية.","تُراجع تواريخ الإنتاج والانتهاء يومياً.","تصوير الصواني بشكل منظم يوضح الأصناف والسعر لكل صينية، ثم إرسالها على قروب خدمة العملاء بشكل يومي.","ذكر السعة لكل صينية والقياسات.","التشييك على تغليف الصواني يومياً."],"r":{"namareq":"b","shima":"p"}},
+  {"t":"التواصل مع العملاء الذين لديهم طلبات جاهزة للاستلام، وإبلاغهم بالمبلغ المتبقي قبل عملية الاستلام (عن طريق واتساب خدمة العملاء)","o":["namareq","shima","shahd"],"note":"نمارق متابعه قروب الحسابات والتاكد ان المبلغ المتبقي رجع للعميل"},
+  {"t":"التشييك يوميا كل نصف ساعة على جودة القهوة العربية من حيث الطعم ودرجة الحرارة، والإبلاغ عن تبديلها إذا كانت باردة، بالإضافة إلى التأكد من نظافة الدلة وتوفر الأكواب بشكل دائم في الصالة","o":["arwa","rahaf"],"note":"في حال الاوف رهف","s":["فحص درجة حرارة القهوة كل نصف ساعة.","تذوقها للتأكد من الجودة والطعم.","تبديلها إذا كانت باردة أو غير مناسبة.","تنظيف الدلة بعد كل تبديل.","التأكد من توفر الأكواب بشكل دائم.","مراجعة جودة القهوة يومياً من قبل مدير المعرض.","يمنع تقديم قهوة غير مطابقة للمعايير.","يجب استخدام دلة نظيفة ومعقمة دائماً.","يمنع ترك القهوة لفترة طويلة دون تبديل."],"r":{"arwa":"p","rahaf":"b"}},
+  {"t":"استقبال العميل وتقديم عينات التذوق له ومن ثم توجيه العميل الى الموظف المتاح لخدمته","o":["arwa","rahaf"],"s":["استقبال العميل بابتسامة ونبرة ترحيبية.","سؤال العميل بلطف عن نوع المناسبة أو ما يبحث عنه (مذاق، توزيعات، صواني).","تقديم عينات للتذوق من الأصناف المتوفرة (شوكليت، مالح).","شرح مختصر لكل صنف أثناء التذوق (المكونات، الحشوة، مدة الصلاحية).","اقتراح أصناف أو صواني تناسب ذوقه بناءً على تفضيلاته.","بعد التذوق، يتم توجيه العميل للموظف المتاح لمتابعة الطلب.","التأكد من أن الموظف على دراية بما تم تذوقه لتكملة الخدمة بسلاسة.","في حال كان الموظف مشغولاً، يبقى العميل مرتاحاً لحين توفر الخدمة.","تسجيل الملاحظات أو التفضيلات إن وجدت.","إذا أبدى العميل رغبة معينة أو ملاحظة، تُدوَّن لتسهيل الخدمة لاحقاً."]},
+  {"t":"متابعة قروب واتساب تبع الحوالات والتأكد من استجابة المحاسبين بخصوص وصول الحوالات أو عدمها.","o":["namareq","shima"]},
+  {"t":"متابعة قروب التعديلات والحسابات، مع ضرورة الرد على استفسارات المحاسبين المتعلقة بتعديلات الفواتير أو استفسارات تحويلات التأمين.","o":["namareq","shima"]},
+  {"t":"للطلبات التي تكون (خارج الرياض)، يتم التحقق من استرجاع الصواني والتاكد من سلامتها، ثم التواصل مع العميل للحصول على معلوماته البنكية، وبعدها إرسال المعلومات إلى قسم الحسابات لتحويل مبلغ التأمين.","o":["namareq","shima"]},
+  {"t":"التأكد من عمل الاضاءات الخارجية بما فيها اللوحة والليد","o":["faisal","mahmoud"],"s":["تشغيل الإضاءات الخارجية في بداية الدوام.","التأكد من عمل لوحة العرض والليد.","فحص الإضاءات بشكل دوري خلال اليوم.","توثيق أي أعطال في سجل الصيانة.","التواصل مع قسم الصيانة عند وجود خلل.","وضع تايمر للإطفاء والتشغيل بشكل أوتوماتيكي."]},
+  {"t":"متابعة زيارات وتغيير معطرات الجو في الصالة ودورات المياه","o":["faisal","mahmoud"],"s":["التأكد من زيارة الشركة المختصة كل شهر (معطر دورة المياه - جهاز أروماتيك - شركة المبيدات الحشرية).","متابعة تغيير المعطرات في الصالة ودورات المياه كل شهر.","التأكد من استخدام الروائح المعتمدة فقط.","توثيق تاريخ التغيير في نموذج CHECK LIST.","فحص فعالية المعطرات بعد التركيب.","رفع أي ملاحظات أو شكاوى للإدارة.","إبلاغ قسم الحسابات في حال الفواتير والحوالات وتجديد الاشتراكات.","توثيق أي تأخير أو غياب للشركة المختصة.","التواصل بشكل مباشر في حال عطل الأجهزة أو التأخير في الزيارات.","يمنع تغيير نوع المعطر دون موافقة الإدارة."]},
+  {"t":"التشييك على صلاحية طفاية الحريق والتأكد من جاهزيتها للاستخدام في حالات الطوارئ وفحص لمبات الحشرات للتأكد من عملها بشكل صحيح وضمان فعاليتها","o":["faisal","mahmoud"],"s":["فحص طفاية الحريق والتأكد من صلاحيتها.","التأكد من جاهزيتها للاستخدام في حالات الطوارئ.","فحص لمبات الحشرات والتأكد من عملها بشكل صحيح.","تنظيفها من الغبار أو العوائق.","رفع أي أعطال لقسم الصيانة فوراً.","التشييك على جهاز الإنذار.","تُراجع سجلات السلامة أسبوعياً.","يجب رفع أي خلل فوراً دون تأخير.","يجب التأكد من أن الطفاية في مكان واضح وسهل الوصول.","توفير لمبات زرقاء احتياطية، وفي حال العطل تُبدَّل على الفور."]},
+  {"t":"ارسال رسالة للعملاء قبل المناسبة بيوم أو يومين لتوضيح تفاصيل حضور المشرفة المسؤولة عن الإشراف، مع تحديد الوقت والمكان بشكل دقيق. وتوضيح الإجراءات المطلوبة في حال الرغبة بإضافة ساعات إشراف إضافية","o":["namareq","shima"]},
+  {"t":"إعادة قطعة الرخام الخاصة بعينات التذوق إلى مكانها الأصلي بعد انتهاء فترة التذوق للعملاء،","o":["arwa","rahaf"],"s":["إزالة قطعة الرخام بعد انتهاء فترة التذوق.","تنظيفها جيداً باستخدام الأدوات المخصصة بعد كل استخدام.","التأكد من عدم وجود أي بقايا أو تلف.","إعادتها إلى مكانها الأصلي في غرفة التحضير.","يمنع ترك قطعة الرخام في العرض أو الصالة بعد التذوق.","مراجعة حالتها أسبوعياً وطلب عدد جديد من المشتريات في حال التلف أو الخدوش.","يمنع استخدامها في غير أغراض التذوق.","يجب استخدام القفاز الأسود من قبل موظفي المبيعات عند تقديم العينات على الرخام."]},
+  {"t":"جرد جميع الطلبات الجاهزة التي لم يتم استلامها في نفس الموعد من قبل العملاء، والتنسيق مع قسم خدمة العملاء للتواصل معهم، مع ضرورة تحديث حالة كل طلب بعد إتمام التواصل.","o":["namareq","shima"],"note":"يتم التشيك من قبل جومار على الصواني التي لم تستلم وفي حال غيابه يكون البديل روينا وخدمة العملاء يتواصلون مع العميل لتذكير بالاستلام","s":["استخراج قائمة الطلبات الجاهزة غير المستلمة.","التنسيق مع قسم خدمة العملاء للتواصل مع العملاء.","تحديث حالة كل طلب بعد التواصل.","توثيق أسباب عدم الاستلام لكل حالة.","إعادة جدولة التسليم إذا لزم الأمر.","إبلاغ العميل بمدة صلاحية المنتجات.","يمنع إلغاء الطلب دون التواصل مع العميل.","يجب توثيق وقت وتاريخ كل محاولة تواصل.","تُراجع حالة المنتج قبل إعادة تسليمه.","يمنع تأخير التواصل لأكثر من 24 ساعة."],"r":{"namareq":"p","shima":"p"}},
+  {"t":"بعد الانتهاء من صف الصواني وتحديد الوزن والسعر النهائي للطلب، وفي حال تبين أن العميل قد دفع مبلغًا زائدًا، يجب التواصل معه لإبلاغه بذلك وطلب معلوماته البنكية لاسترداد المبلغ","o":["namareq","shima"]},
+  {"t":"متابعة مشرفات البارت تايم والتأكد من تأكيد حضورهن للحفل.","o":["namareq","shima"],"note":"البديل يوم الاوف شيماء","r":{"namareq":"p","shima":"b"}},
+  {"t":"التأكد من وصول مشرفات سوار إلى موقع الحفل في الوقت المحدد حسب الدليل التشغيلي.","o":["namareq","shima"],"note":"البديل يوم الاوف نمارق","r":{"namareq":"b","shima":"p"}},
+  {"t":"متابعة التزام المشرفات بجميع تفاصيل الدليل التشغيلي والمهام الموكلة إليهن.","o":["namareq","shima"],"note":"البديل يوم الاوف نمارق","r":{"namareq":"b","shima":"p"}},
+  {"t":"التشيك على عمل التلفون والواتساب وفتح المنيو للتاكد من عملهم","o":["shima","shahd"]},
+  {"t":"ارسال رسالة الموعد للعميله قبل يوم من الموعد عند الساعه 4 عصرا، وارسال الرساله للموظف صاحب الموعد بحيث يتم التنسيق من خلاله لطلب عينات للعميل","o":["namareq","shima"]},
+  {"t":"الرد هاتفيا على العملاء الاستفسار عن عدد حضور يفوق ال 150 شخص وشرح خدمات سوار","o":["namareq","shima"]},
+  {"t":"ارسال قالب لطلب مواقع التوصيل والمسؤوله عن ترتيبها في الشيت المخصص وتسليمها لفريق اللوجستك","o":["namareq","shima"]},
+  {"t":"ارسال رساله على قروب التشغيلي توضح حجز المكتب بمجمل 3 ساعات (ساعه قبل الموعد وساعه للموعد وساعه بعده)","o":["namareq","shima"]},
+  {"t":"ارسال قالب حلى الزفه والمسؤول عن حلى الزفه وترتيب طلبه","o":["namareq","shima"]},
+  {"t":"التشيك على الوتساب القديم","o":["namareq","shima"]},
+  {"t":"في حال وجود عطل او اشكاليه في مشغل الواتساب او السستم يتم رفع الى المدير المباشر","o":["namareq","shima","shahd"]},
+  {"t":"ارسال القالب لفتح محادثات الصور","o":["namareq","shahd"]},
+  {"t":"اعادة جميع الاغراض المكتبيه الى الاماكن المخصصه لها","o":["namareq","shima","shahd"]},
+  {"t":"التاكيد على المدفوعات لقروب اللوجستك","o":["namareq","shahd"]},
+  {"t":"استلام الواتساب في حال الاجازات الرسمية للرد على طلبات التي حالتها على الاتصال، والعمل على المتابعه بحيث سير العمل يكون مستمر من ارسال رساله الاليه للعملاء توضح سبب اقفال المعرض","o":["namareq","shima"]},
+  {"t":"طلب طباعة استكرات الأصناف الجديدة من المشتريات ومتابعة استلامها في الوقت المحدد","o":["faisal","mahmoud"]},
+  {"t":"رفع تقرير بمبالغ الإشراف الى قسم الحسابات","o":["faisal","mahmoud"]},
+  {"t":"متابعة صيانة أجهزة الشبكة والطابعات وتوفير ورق الفواتير","o":["zakaria","sharif"]},
+  {"t":"تسجيل ومتابعه النموذج المخصص لعملاء B2B","o":["shahd"],"note":"يتم تسجيلهم في شيت للمتابعه معهم من قبل القسم المختص"},
+  {"t":"متابعة قروب العمليات اليومية بين التحضير والمعرض وخدمة العملاء، والتنسيق على الطلبات والتعديلات وحالات On Call وملاحظات الفواتير لضمان سرعة التنفيذ وتقليل الأخطاء التشغيلية.","o":["faisal","mahmoud","zakaria","sharif","namareq","shima","shahd"],"note":"يجب متابعة تنفيذ الطلبات والتأكد من إغلاقها مع وضع علامه وفق الأصول التشغيلية المعتمدة"},
+  {"t":"متابعة طلبات رد التأمين من خلال إرسال رقم الفاتورة وعدد الصواني المسترجعة وحالتها، مع توضيح أي ملاحظات أو ملحقات مفقودة أو خدوش أو نواقص","o":["faisal","mahmoud","zakaria","sharif","namareq","shima","shahd"],"note":"التأكد من اعتماد الاستلام من قبل موظفات خدمة العملاء عبر وضع علامة للتواصل مع العميل وأخذ بياناته، بالإضافة إلى متابعة الصواني التي تجاوزت 3 أيام دون استرجاع من قبل مشرف التحضير او النائب وإشعار خدمة العملاء للتواصل مع العميلة واستكمال إجراءات الاسترجاع."},
+  {"t":"التاكد من ارجاع المشرفات للصواني نظيفه مغلفه في البابل اذا كانت من ضمن الصواني التي تحتوي على البابل","o":["namareq","shima"],"note":"ترسل المشرفه صوره والسائق صوره في حال المخالفه يتم ابلاغ عزام عبر قروب مهام خدمة العملاء"},
+  {"t":"المسؤوله عن عينات التذوق وحفظها في البوكس الخاص بالمناسبات والمحافظه على نظافة البوكس","o":["namareq","shima"],"note":"المسؤوله وقت الوصل في حال كان في موعد بان تحفظ العينات التي توصل من المطبخ في البوكس الخاص بعينات العملاء المناسبات ويتم تسليمها في ما بعد للموظف المسؤول عن الموعد"}
+];
+
+const PREP_OWNERS = [
+  { key: 'jawad',    name: 'جواد',    off: 'الثلاثاء', color: '#2F6F5E' },
+  { key: 'gaylord',  name: 'جايلورد', off: 'الاثنين',  color: '#B4552D' },
+  { key: 'jomar',    name: 'جومار',   off: 'الأحد',    color: '#3A5A9B' },
+  { key: 'herfy',    name: 'هيرفي',   off: 'السبت',    color: '#7A5FA0' },
+  { key: 'jimmy',    name: 'جيمي',    off: 'الثلاثاء', color: '#B07C0B' },
+  { key: 'gerom',    name: 'جيروم',   off: 'الاثنين',  color: '#1F6F7A' },
+  { key: 'roena',    name: 'روينا',   off: 'الأربعاء', color: '#9B3A5A' },
+  { key: 'charmlen', name: 'شارملين', off: 'الأحد',    color: '#5E7A2F' },
+  { key: 'mari',     name: 'ماري',    off: 'الاثنين',  color: '#6B5A45' }
+];
+
+const PREP_STEPS = {
+  0: ['استخراج قائمة الأرقام من الفواتير في النظام قبل المناسبة بـ5 أيام.', 'حفظ رقم الجوال وتسجيله برقم الـCR لكل طلب في جوال المعرض.', 'التأكد من تطابق الأرقام مع الطلبات المسجلة.', 'تجهيز الصور المطلوبة للإرسال لاحقاً.', 'توثيق العملية وإرسال صور الصواني بعد تحضيرها للعملاء.', 'كذلك التواصل معهم لأخذ مواقع التوصيل أو لوقو حلا الزفة أو أي استفسار آخر.'],
+  1: ['تشغيل المكيفات قبل بداية الدوام.', 'ضبط درجة الحرارة على 18 درجة حسب الدليل التشغيلي.', 'متابعة درجة الحرارة خلال اليوم.', 'التأكد من توزيع الهواء بشكل مناسب في الصالة.', 'إغلاق المكيفات بعد انتهاء الدوام.', 'تنظيف الفلاتر أسبوعياً يوم الأحد.', 'رفع أي أعطال لقسم الصيانة فوراً.', 'يمنع تشغيل المكيفات في حال وجود تسرب أو صوت غير طبيعي.', 'يمنع تغيير درجة الحرارة دون موافقة الإدارة.', 'يتم رفع تقرير دوري عن حالة التكييف.'],
+  2: ['فتح الطلب في السستم والتشييك عليه.', 'مراجعة تفاصيل الطلب بدقة.', 'تعبئة النموذج المعتمد للمراجعة والتأكد من التغليف.', 'توقيع النموذج من الموظف المسؤول والتأكد من مطابقة الأعداد.', 'توقيع السائق الذي استلم الطلب.', 'تصوير ورفع النموذج على قروب الجودة موضحاً وقت التسليم.', 'يمنع تسليم أي طلب دون تعبئة النموذج.', 'يجب التأكد من توقيع الموظف والمشرف.', 'يجب توثيق أي ملاحظات أو اختلافات.', 'يجب التأكد من تطابق الطلب مع الفاتورة.'],
+  3: ['فتح الطلب في السستم والتشييك عليه.', 'مراجعة تفاصيل الطلب بدقة.', 'تعبئة النموذج المعتمد للمراجعة والتأكد من التغليف.', 'توقيع النموذج من الموظف المسؤول والتأكد من مطابقة الأعداد.', 'توقيع السائق الذي استلم الطلب، ثم توقيع المشرفة التي استلمت من السائق عند وصول الطلب للموقع.', 'تصوير ورفع النموذج على قروب الجودة موضحاً وقت التسليم.', 'يمنع تسليم أي طلب دون تعبئة النموذج.', 'يجب التأكد من توقيع السائق ومشرف غرفة التحضير والمشرفة على المناسبة.', 'يجب توثيق أي ملاحظات أو اختلافات.', 'يجب التأكد من شنطة الإشراف وأنها تحتوي على جميع المتطلبات.'],
+  4: ['استقبال الطلب من المورد في الوقت المحدد.', 'التحقق من عدد الأصناف وجودتها.', 'وزن المنتجات وتوثيق الكمية.', 'تسجيل أي ملاحظات أو اختلافات وتوثيق أي نقص أو تلف فوراً.', 'رفع تقرير للإدارة بالملاحظات.', 'حفظ الفاتورة في سجل الموردين وإرسال نسخة للحسابات مع وضع الأكواد لكل صنف.', 'التأكد من تطابق الكمية مع الفاتورة.', 'يمنع استلام أي طلب دون توثيق الوزن.', 'يجب التأكد من نظافة المنتجات قبل التخزين.', 'يمنع تخزين المنتجات قبل فحصها.'],
+  5: ['مراجعة نموذج الحجوزات تبع الصواني.', 'تحديد أعداد الصواني حسب الطلبات القادمة.', 'تعبئة النموذج المعتمد لطلب الصواني.', 'إرسال الطلب للمستودع عبر القنوات الرسمية.', 'متابعة استلام الصواني والتأكد من مطابقتها للطلب.', 'فحص جودة الصواني قبل استخدامها.', 'يمنع خلط صواني التأمين مع صواني البيع.', 'يمنع استخدام صواني غير مطابقة للمواصفات أو حالتها غير سليمة، ويتم استرجاعها وإبلاغ مسؤول المستودع بإرسال صواني بديلة بحالة جيدة.', 'يجب التأكد من نظافة الصواني قبل عرضها أو تسليمها.', 'يجب توثيق أي نقص أو تلف فوراً في النموذج.'],
+  6: ['شحن الأجهزة الكهربائية قبل نهاية الدوام.', 'إغلاق جميع أجهزة الكمبيوتر بشكل آمن.', 'فصل الشواحن للأجهزة الأخرى.', 'التأكد من عدم وجود أجهزة تعمل بعد الدوام.', 'فحص البطاريات والتوصيلات بشكل دوري.', 'تنظيف الأجهزة من الخارج.', 'رفع أي أعطال لقسم التقنية.', 'يجب التأكد من فصل جميع الشواحن لتجنب استهلاك الكهرباء.', 'يجب توثيق أي خلل أو بطء في التشغيل.', 'يمنع استخدام أجهزة غير معتمدة.'],
+  7: ['استخدام جهاز قياس درجات حرارة مناسبة (تبريد/تجميد).', 'ارتداء القفازات عند التعامل المباشر مع المنتجات وتغييرها بين المهام المختلفة.', 'عدم لمس الوجه أو الأسطح بالقفازات.', 'استخدام غطاء الشعر والكمامة دائماً والتأكد من تغطية الشعر بالكامل.', 'الكمامة ضرورية عند التعامل مع الطعام المكشوف.', 'تنظيف وتعقيم الأسطح والأدوات قبل وبعد الاستخدام.', 'فحص نظافة زي الموظفين قبل دخول غرفة التحضير والتأكد من خلو الملابس من البقع أو الروائح، ومنع دخول أي موظف بزي غير مخصص للتحضير.', 'منع تناول الطعام أو الشراب داخل غرفة التحضير.', 'وضع لافتات توعوية واضحة.', 'إجراء تفتيش دوري مفاجئ من قبل مشرف السلامة وتوثيق أي مخالفة أو ملاحظة.'],
+  8: ['تسجيل البيانات في شيت التأمين.', 'استلام الصواني المستردة من العميل.', 'فحص حالة كل صينية بدقة وتوثيق أي تلف أو نقص.', 'مراجعة التشيك ليست المرفقة مع الطلب.', 'توقيع الموظف المسؤول على الاستلام.', 'يمنع استلام صواني دون مراجعة التشيك ليست.', 'يجب التأكد من تطابق عدد الصواني مع الفاتورة.', 'يتم مراجعة نموذج التأمين كل 3 أيام.', 'يجب تصوير الصواني المستلمة وبها خدوش أو تلف وإرسالها للعميل لإبلاغه.', 'إرسال كود الصواني وقيمة الخصم لقسم الحسابات.'],
+  9: ['مراجعة الطلبات الخاصة بكل عميل قبل بدء التحضير.', 'التأكد من سلامة صينية العميل عند الاستلام.', 'فرز الصواني حسب العميل وتحديد مكان مخصص لكل مجموعة.', 'وضع رقم الفاتورة على كل صينية.', 'التأكد من عدم وجود عناصر إضافية أو ناقصة في أي صينية.', 'مراجعة ترتيب الصواني ووضع مسافة بينها.', 'إجراء فحص نهائي قبل خروج الطلب لضمان عدم الخلط.', 'توثيق أي ملاحظة أو تعديل.'],
+  10: ['تجهيز بوكس التصوير عند الاحتياج.', 'التأكد من نظافة البوكس قبل الاستخدام.', 'تركيب العناصر الداخلية (خلفية، قاعدة، إضاءة) بشكل آمن.', 'ضبط الإضاءة والزوايا حسب نوع التصوير المطلوب.', 'استخدام البوكس لتصوير المنتجات وفق الجدول أو الطلبات الخاصة.', 'تفريغ البوكس من العناصر بعد انتهاء التصوير.', 'تنظيف البوكس من الداخل والخارج بعد كل استخدام.', 'فك الأجزاء القابلة للفك وتخزينها بطريقة منظمة.', 'حفظ البوكس في مكان مخصص بعيداً عن الرطوبة أو التلف.', 'توثيق حالة البوكس بشكل دوري وإبلاغ القسم المختص بأي خلل.'],
+  11: ['مراجعة الطلب النهائي بعد انتهاء التجهيز الكامل.', 'التأكد من مطابقة الكميات الفعلية مع ما تم طلبه.', 'توثيق أي تعديل أو نقص في الكمية.', 'فتح نموذج الكلاينت ريكويست الخاص بالطلب.', 'تحديث الكميات الفعلية في النظام.', 'إضافة ملاحظات في حال وجود اختلاف عن الطلب الأصلي.', 'وضع جميع التفاصيل في نموذج الشيك ليست.'],
+  12: ['مراجعة الطلبات التي تحتاج استلاماً من الموردين.', 'تحديد الكميات الجاهزة للاستلام وتوقيت الاستلام المطلوب.', 'التنسيق مع الموردين لتأكيد جاهزية الطلب.', 'إبلاغ مسؤول الخدمات والمساندة بمواعيد الاستلام.', 'كتابة رسالة واضحة في قروب النقل والتوريد توضح الجدولة.', 'تضمين اسم المورد، نوع الطلب، والوقت المقترح للاستلام.', 'التأكد من أن الرسالة وصلت لجميع المعنيين.', 'متابعة تأكيد السائقين على الجدولة.', 'تحديث الحالة في حال وجود تغيير أو تأخير.'],
+  13: ['التوجه إلى منطقة الشاشات قبل بدء وقت العمل.', 'التأكد من نظافة الشاشة والمنطقة المحيطة بها.', 'فحص التوصيلات الكهربائية والتأكد من سلامتها.', 'تشغيل الشاشة باستخدام الطريقة المعتمدة (زر أو ريموت).', 'التأكد من ظهور المحتوى المطلوب على الشاشة.', 'ضبط الإضاءة والسطوع حسب الحاجة.', 'التأكد من أن الشاشة تعرض المحتوى الصحيح (عروض – تعليمات – صور).', 'متابعة الشاشة خلال اليوم للتأكد من استمرار التشغيل.', 'إطفاء الشاشة في نهاية اليوم أو عند انتهاء العرض.', 'توثيق أي خلل أو ملاحظة وإبلاغ القسم المختص.'],
+  14: ['فرز البوكسات حسب تاريخ الإنتاج.', 'مراجعة المخزون يومياً قبل بداية الدوام.', 'فحص صلاحية كل بوكس بدقة.', 'تحديد المنتجات منتهية الصلاحية أو الزائدة عن الحاجة.', 'توثيق الكميات في الشيت.', 'رفع تقرير بالكميات المنتهية الصلاحية أو التالفة مع كتابة الأسباب المرتبطة بكل حالة (تكدس، انتهاء صلاحية، ضعف الطلب).', 'يمنع استخدام شوكليت منتهي الصلاحية.', 'وضع الكميات في بوكس مع إرفاق التقرير وإرسالها إلى المالك.', 'تُراجع الكميات المنتهية من قبل مشرف التحضير ويُبلَّغ مدير المعرض بذلك.', 'يمنع التخلص من أي منتج دون توثيق وموافقة.'],
+  15: ['تحديد يوم الأحد للجرد الأسبوعي.', 'فرز الشوكليت والبوكسات والصواني حسب النوع.', 'تسجيل الكميات بدقة في الشيت المخصص.', 'مراجعة حالة كل صنف (جيد، تالف، ناقص).', 'حفظ نسخة من الجرد في ملف خاص.', 'متابعة أي اختلافات أو ملاحظات.', 'يمنع تأجيل الجرد الأسبوعي لأي سبب.', 'يتم مراجعة الجرد من قبل الحسابات.', 'يجب توثيق أي نقص أو تلف فوراً.', 'يجب التأكد من تطابق الجرد مع المخزون الفعلي.'],
+  16: ['التشييك على المنتجات من الموردين يومياً.', 'فرز الكميات حسب النوع والتاريخ.', 'تسجيل الكميات في سجل الجرد اليومي.', 'مراجعة الفاتورة ومطابقتها مع الكمية المستلمة.', 'توثيق أي اختلاف أو ملاحظة.', 'إرسال البيانات لقسم الحسابات في نفس اليوم.', 'يمنع ترحيل أو تأخير إرسال البيانات للحسابات.', 'يجب أن يكون الجرد دقيقاً ويشمل كل صنف.', 'يمنع استلام منتجات غير مطابقة للمواصفات.'],
+  17: ['مراجعة الاحتياج الأسبوعي من القهوة والماء.', 'تعبئة النموذج المعتمد للطلب.', 'إرسال الطلب أيام الأحد والأربعاء والجمعة.', 'متابعة الاستلام من المستودع.', 'التأكد من تطابق الكمية مع الطلب.', 'يمنع طلب كميات غير مبررة أو زائدة.', 'يجب استخدام النموذج المعتمد في السستم.', 'يجب توثيق أي نقص أو تأخير في الاستلام.', 'يمنع تغيير أيام الطلب دون موافقة الإدارة.', 'يجب التأكد من جودة المنتجات المستلمة.'],
+  18: ['مراجعة قائمة المنتجات المطلوبة حسب جدول المناسبات.', 'تحديد الكميات المطلوبة لكل صنف.', 'تعبئة النموذج المعتمد لطلب المنتجات.', 'إرسال الطلب للموردين المعتمدين.', 'متابعة تأكيد الاستلام من المورد.', 'مراجعة جودة المنتجات عند الاستلام.', 'تُعمل الطلبات من قبل مشرف التحضير أو من ينوب عنه.', 'يجب توثيق أي تأخير أو نقص في الاستلام.', 'يجب التأكد من تطابق الكمية مع الفاتورة.', 'يجب الالتزام بالطلب قبل فترة، ما عدا طلبات in call على أن تكون في نفس الموعد المسموح.'],
+  19: ['تسجيل البيانات في شيت التأمين.', 'استلام الصواني المستردة من العميل.', 'فحص حالة كل صينية بدقة وتوثيق أي تلف أو نقص.', 'مراجعة التشيك ليست المرفقة مع الطلب.', 'توقيع الموظف المسؤول على الاستلام.', 'يمنع استلام صواني دون مراجعة التشيك ليست.', 'يجب التأكد من تطابق عدد الصواني مع الفاتورة.', 'يتم مراجعة نموذج التأمين كل 3 أيام.', 'يجب تصوير الصواني المستلمة وبها خدوش أو تلف وإرسالها للعميل لإبلاغه.', 'إرسال كود الصواني وقيمة الخصم لقسم الحسابات.'],
+  20: ['فحص التغليف لكل صينية بعد التحضير.', 'التأكد من نظافة الصينية والمحتوى.', 'مراجعة جودة التغليف حسب المعايير.', 'تصوير الصينية قبل التسليم وإرسال الصور لقسم الجودة.', 'تنفيذ أي تعديلات مطلوبة.', 'يمنع تسليم أي صينية دون تغليف محكم.', 'يجب استخدام مواد تغليف معتمدة فقط.', 'يتم مراجعة التغليف من قبل مشرفة الجودة.', 'يمنع استخدام صواني غير نظيفة.', 'يجب التأكد من تطابق التغليف مع نوع المناسبة.'],
+  21: ['فرز الصناديق حسب النوع والمحتوى.', 'تنظيفها من الداخل والخارج.', 'ترتيبها في الرفوف بشكل منظم.', 'التأكد من سهولة الوصول إليها.', 'توثيق الكميات المتوفرة في الشيت.', 'مراجعة تواريخ الصلاحية.', 'يجب ترتيب بوكسات الشوكليت من الأقدم فالأحدث.'],
+  22: ['استلام توزيعات الأكرليك من مندوب قسم الجودة.', 'فرز التوزيعات حسب النوع والمقاس لتسهيل الفحص.', 'التأكد من أن كل قطعة تحتوي على اللوقو المعتمد بشكل واضح.', 'مراجعة جودة طباعة اللوقو من حيث الوضوح والثبات.', 'مطابقة عدد القطع المستلمة مع الكمية المطلوبة في الطلب.', 'توثيق أي نقص أو خلل في نموذج مخصص.', 'فصل القطع غير المطابقة أو التي تحتوي على أخطاء.', 'إبلاغ الإدارة أو قسم الجودة بالملاحظات فوراً.', 'وضع رقم الفاتورة التابعة للطلب.'],
+  23: ['فرز الصواني حسب النوع والحالة.', 'مراجعة التشيك ليست الخاصة بكل صينية.', 'تنظيف الصواني وتجهيزها للإرجاع.', 'تعبئة نموذج الإرجاع المعتمد.', 'توقيع النموذج من الموظف المسؤول.', 'تصوير الصواني بعد تجهيزها للنقل مع الشيك ليست.', 'يتم الاستلام من قبل المندوب وإرسالها إلى المستودع وتوثيق العملية.', 'يمنع إعادة صواني غير نظيفة أو تالفة دون وضع ذلك في الشيك ليست.', 'يجب توثيق أي نقص أو تلف في النموذج.', 'يمنع خلط صواني التأمين مع صواني البيع.'],
+  24: ['جمع الشوكليت المسحوب من صواني العرض في نهاية اليوم أو الأسبوع.', 'فرز القطع حسب النوع والحالة لضمان صلاحيتها.', 'تجهيز بوكسات جانبية نظيفة ومناسبة للتخزين.', 'وضع الشوكليت داخل البوكسات بشكل مرتب وآمن.', 'كتابة عبارة «بوش» على كل بوكس بشكل واضح.', 'إضافة تاريخ الإنتاج الفعلي على البطاقة المثبتة.', 'تثبيت البطاقة على البوكس بطريقة لا تتلف أو تنفصل.', 'تخزين البوكسات في مكان مخصص بعيداً عن المنتجات الجديدة.', 'توثيق الكمية والتاريخ في سجل داخلي.'],
+  25: ['إزالة أي صناديق تالفة أو منتهية.', 'رفع تقرير شهري عن حالة البوكسات.', 'يمنع وضع أي صناديق على الأرض.'],
+  26: ['مراجعة البوكسات الجاهزة للتغليف أو التخزين.', 'التأكد من وجود استكرات الشوكليت المعتمدة لكل نوع.', 'متابعة عملية تثبيت الاستكرات على البوكسات بشكل صحيح.', 'التأكد من وضوح المعلومات على كل استكر (النوع – التاريخ – الرمز).', 'حصر عدد الاستكرات المتبقية بشكل يومي أو أسبوعي.', 'مقارنة الكمية المتبقية مع عدد الطلبات القادمة.', 'رفع تنبيه مبكر في حال اقتراب نفاد الكمية.', 'طلب دفعة جديدة من الاستكرات من المشتريات حسب النموذج المعتمد.', 'توثيق الكميات المستلمة والمستخدمة في سجل خاص.', 'التنسيق مع قسم الجودة للتأكد من مطابقة الاستكرات للمواصفات.'],
+  27: ['إعداد جدول تدريبي يشمل جميع الزملاء في غرفة التحضير.', 'تحديد السياسات المعتمدة في سوار للصف والتغليف.', 'تجهيز نماذج عملية توضح الطريقة الصحيحة للصف.', 'عرض أمثلة على التغليف المعتمد (بوكس – ورق – استكر).', 'شرح الأخطاء الشائعة التي يجب تجنبها.', 'تنفيذ تدريب عملي لكل موظف على صف وتغليف صينية.', 'تقديم ملاحظات فورية لكل موظف لتحسين الأداء.', 'توثيق حضور وتفاعل الموظفين في سجل التدريب.', 'رفع تقرير للإدارة عن نتائج التدريب والملاحظات.', 'متابعة تطبيق الموظفين لما تم تدريبه عليه في المهام اليومية.'],
+  28: ['التواجد اليومي في غرفة التحضير لمتابعة صف الصواني قبل خروجها.', 'التأكد من أن ترتيب الصواني يتوافق مع المواصفات المعتمدة للعرض والتغليف.', 'مراجعة شكل الترتيب العام داخل الصينية وتناسق العناصر.', 'التأكد من نظافة الصينية وعدم وجود أي خلل.', 'متابعة الصور المرسلة على قروب الجودة بشكل فوري.', 'مقارنة الصور مع المواصفات المعتمدة للتأكد من المطابقة.', 'التنسيق مع قسم الجودة في حال وجود ملاحظات أو خلل.', 'توجيه الفريق لتعديل أي صينية غير مطابقة قبل خروجها.', 'توثيق الحالات التي تم تعديلها أو رفضها.'],
+  29: ['استلام الصواني من المستودع حسب الجدول والعدد المحدد.', 'فحص كل صينية من حيث الشكل، النظافة، والحالة العامة.', 'التأكد من مطابقة العدد المستلم مع الكمية المطلوبة.', 'تنظيم الصواني في الرفوف حسب النوع والمقاس.', 'التأكد من مطابقة العدد الفعلي مع الكمية المطلوبة.', 'فرز الصواني غير المطابقة للجودة مباشرة.', 'إعادة الصواني غير الجيدة إلى المستودع فوراً.', 'توثيق أي نقص أو خلل في نموذج مخصص.', 'رفع تقرير أسبوعي عن حالة الصواني.', 'إبلاغ الإدارة أو القسم المختص بالملاحظات.'],
+  30: ['استخراج قائمة الطلبات المجدولة للتسليم خلال الأيام الثلاثة القادمة.', 'مراجعة تفاصيل كل طلب والتأكد من وضوحه.', 'إرسال الكميات المطلوبة إلى المطبخ للتحضير.', 'التواصل مع الموردين الآخرين لتأكيد توفر الأصناف المطلوبة.', 'طلب الصواني من المستودع حسب الحاجة.', 'التأكد من جاهزية جميع العناصر قبل موعد التسليم.', 'مراجعة أي طلب خاص أو ملاحظة من العميل.', 'توثيق حالة كل طلب في سجل المتابعة.', 'التنسيق مع فريق التحضير لتوزيع المهام.', 'رفع تقرير يومي للإدارة بحالة الطلبات القادمة.'],
+  31: ['جمع جميع صناديق الشوكولاتة والأكرليك من مناطق التحضير والتخزين.', 'تنظيف كل صندوق بعناية باستخدام أدوات مخصصة.', 'التأكد من إزالة أي بقايا أو آثار داخل الصناديق.', 'تجفيف الصناديق بالكامل قبل إعادة استخدامها.', 'فرز الصناديق حسب النوع والحجم.', 'تنظيمها في الرفوف المخصصة بشكل مرتب وواضح.', 'تثبيت بطاقات تعريفية لكل رف حسب نوع الصندوق.', 'توثيق عدد الصناديق الجاهزة للاستخدام.', 'إبلاغ الفريق بجاهزية الصناديق للتحضير.', 'متابعة النظافة بشكل دوري لضمان الاستمرارية.'],
+  32: ['تجهيز مكان التصوير قبل بدء العمل اليومي.', 'التأكد من نظافة البوكس المستخدم في التصوير.', 'ترتيب العناصر داخل البوكس حسب المواصفات المعتمدة.', 'تشغيل الإضاءة المخصصة للتصوير حسب نوع المنتج.', 'ضبط الزوايا والإعدادات لضمان جودة الصورة.', 'تصوير المنتجات حسب الجدول أو الطلبات الخاصة.', 'إطفاء الإضاءة بعد الانتهاء للحفاظ على المعدات.', 'تنظيف المكان بعد كل جلسة تصوير.', 'حفظ الصور في المجلد المخصص ومشاركتها مع قسم الجودة.', 'رفع تقرير دوري عن حالة المكان وجودة الصور.'],
+  33: ['فحص نظافة السيارة من الداخل والخارج.', 'التأكد من جاهزية السائق والتزامه بالزي الرسمي.', 'مراجعة جودة التغليف داخل السيارة.', 'التأكد من تشغيل التكييف داخل السيارة.', 'توثيق أي ملاحظات أو مخالفات في النموذج تبع التشييك.', 'تصوير السيارة والطلب بعد التحميل.', 'التأكد من معلومات العميل المطلوبة ومطابقتها عند تسليم الطلب للسائق.', 'التأكد من تطابق درجة الحرارة المعتمدة 18 درجة مئوية.'],
+  34: ['استخراج قائمة الحجوزات من النظام.', 'التأكد من تسجيل كل حجز في الشيت.', 'تحديد التاريخ المطلوب لكل حجز بدقة.', 'مطابقة بيانات الحجز مع الطلبات الفعلية.', 'مراجعة حالة الصواني المحجوزة.', 'التواصل مع المستودع لتأكيد الجاهزية.', 'توثيق أي اختلاف أو نقص في سجل خاص.', 'رفع تقرير للإدارة قبل المناسبة بـ3 أيام.', 'يجب التأكد من تطابق الحجز مع رقم الـCR.', 'يجب التأكد من تاريخ المناسبة والحجز.'],
+  35: ['فرز المنتجات حسب النوع (ورق، استكرات، ريبون).', 'تنظيف الأدوات قبل الترتيب.', 'تنظيمها في الأدراج أو الرفوف المخصصة.', 'التأكد من سهولة الوصول إليها.', 'التأكد من الكميات المتوفرة وأخذ احتياط بعدم الانقطاع وأنها كافية، ويجب الطلب قبل انتهاء الكمية.', 'إزالة أي مواد تالفة أو غير صالحة.', 'رفع تقرير شهري عن حالة التنظيم.', 'يمنع خلط الأنواع المختلفة في نفس الرف.', 'يجب توثيق أي نقص أو تلف.', 'يمنع استخدام أدوات غير معتمدة.'],
+  36: ['متابعة نظافة الأرضيات والأسطح بشكل دوري خلال الوردية.', 'تنظيف أي منطقة تتسخ فوراً دون تأخير.', 'التأكد من توفر أدوات التنظيف في أماكنها.', 'تنظيف دورات المياه والمعرض حسب الجدول.', 'تغيير المعطرات عند الحاجة.', 'مراجعة نظافة الدلة والأكواب بشكل مستمر.', 'يجب استخدام أدوات تنظيف معتمدة فقط.', 'تُراجع النظافة من قبل مشرف التحضير لغرفة التحضير، والصالة من قبل مدير المعرض.', 'يجب التأكد من نظافة منطقة التذوق دائماً.', 'يجب التشييك بشكل دوري من قبل موظفي النظافة.'],
+  37: ['تجهيز 12 صينية متنوعة من حيث الحجم والسعر.', 'التأكد من نظافة كل صينية قبل العرض.', 'مراجعة حالة الصواني والتأكد من خلوها من أي تلف.', 'ترتيب الصواني في أماكن العرض مع وضع التسعير لكل صينية والتأكد من التغليف والريبون.', 'طلب صواني جديدة عند الحاجة من المستودع.', 'تصويرها بشكل يومي مع ذكر الأوزان لكل صينية وسعرها.', 'يوضع في كل صينية نوع إلى نوعين حسب السعة، على أن يكون صنف واحد من الأكثر مبيعاً والآخر من الأقل أو المتوسط.', 'تكون مدة صلاحية المنتجات شهراً ولا توضع منتجات طازجة.', 'يجب التأكد من وجود تنوع في الأحجام والأسعار.', 'يجب التأكد من توفر كرت الصلاحية وتاريخ الإنتاج والانتهاء والسعرات على كل صينية.'],
+  38: ['فرز صواني التأمين حسب الشكل.', 'اختيار صينية واحدة من كل شكل بحالة ممتازة.', 'تنظيفها وتجهيزها للعرض.', 'وضعها في أماكن مخصصة بالصالة.', 'تنويع الصواني في العرض كل أسبوع.', 'يمنع عرض صواني بها خدوش أو تلف.', 'يجب التأكد من أن كل شكل ممثل بصينية واحدة على الأقل.', 'تُنظف الصواني المعروضة يومياً.', 'يجب التأكد من عدم خلط صواني التأمين مع صواني البيع.', 'عدم وضع صواني غير معتمدة.'],
+  39: ['تجهيز كروت الصلاحية والسعرات وتاريخ الإنتاج.', 'التأكد من عدم وجود ملصقات المورد.', 'مراجعة كل صينية قبل العرض.', 'تصوير الصواني بعد وضع المنتج وعرضها في الصالة.', 'تحديث تاريخ الصلاحية كل أسبوع أو عند تعبئة جديدة.', 'يمنع عرض أي صينية بدون كرت صلاحية.', 'يجب استخدام الاستكرات المعتمدة فقط.', 'يتم مراجعة تاريخ الإنتاج والانتهاء يومياً.', 'تُغيَّر الحشوات كل أسبوع للصواني.', 'يتم التشييك على تغليف الصواني يومياً.'],
+  40: ['مراجعة الطلب النهائي والتأكد من عدد الصواني المطلوب تسليمها.', 'التوجه إلى منطقة التحضير قبل وقت التسليم المحدد.', 'فحص طريقة صف الصواني على الطاولة أو داخل البوكسات.', 'التأكد من أن الترتيب يعكس الشكل المعتمد للعرض أو التقديم.', 'مراجعة التغليف الخارجي لكل صينية (ورق، غطاء، ملصق).', 'التأكد من نظافة الصواني وعدم وجود أي آثار غير مرغوبة.', 'التحقق من ثبات العناصر داخل الصينية وعدم تحركها أثناء النقل.', 'توثيق أي ملاحظات أو خلل في الترتيب أو التغليف.', 'إبلاغ الفريق المسؤول فوراً لتعديل أي خلل قبل التسليم.', 'اعتماد الصواني الجاهزة وإعطاء الإذن بخروجها للعميل.'],
+  41: ['مراجعة الطلب أو الحالة التي تستدعي تقديم عينة أو تعويض أو هدية.', 'التأكد من وجود رقم الفاتورة المرتبط بالعميل أو الحالة.', 'التحقق من نوع المنتج المطلوب تقديمه (عينة – تعويض – هدية).', 'تحديد الكمية المناسبة حسب سياسة المعرض أو التوجيه الإداري.', 'تجهيز المنتج في بوكس مناسب يراعي الشكل والجودة.', 'تثبيت بطاقة توضح نوع الإرسال (عينة – تعويض – هدية) ورقم الفاتورة.', 'توثيق العملية في سجل خاص بالهدايا والتعويضات.', 'التنسيق مع قسم التوصيل لتسليم المنتج للعميل.', 'إبلاغ الإدارة أو القسم المختص بإتمام العملية.', 'حفظ نسخة من التوثيق للرجوع إليها عند الحاجة.'],
+  42: ['تجهيز الصواني حسب الطلب والمواصفات.', 'تصويرها بجودة عالية من زوايا متعددة.', 'إرسال الصور للعميل عبر واتساب.', 'إرسال الصور أيضاً لقروب الجودة للمراجعة.', 'تنفيذ أي تعديلات مطلوبة من العميل أو الجودة.', 'إعادة تصوير الصواني بعد التعديل.', 'يمنع إرسال صور غير واضحة أو غير مكتملة.', 'يجب التأكد من وقت إرسال الصور؛ وفي حال كانت المنتجات طازجة تُرسل في نفس اليوم.', 'يجب التأكد من تطابق الصور مع الطلب الفعلي.', 'تُراجع الصور من قبل مشرفة الجودة.'],
+  43: ['مراجعة احتياج المعرض أو التحضير من الاكسسوارات والديكورات.', 'تحديد العناصر المطلوبة (ورد، أكرليك، توزيعات، إلخ).', 'استخدام النموذج المعتمد لتعبئة الطلب.', 'توضيح الكميات والمواصفات المطلوبة لكل عنصر.', 'إرسال النموذج إلى القسم المختص أو المورد المعتمد.', 'متابعة تأكيد استلام الطلب من الطرف الآخر.', 'تحديد موعد الاستلام المتوقع والتنسيق عليه.', 'التأكد من مطابقة العناصر المستلمة للمواصفات المطلوبة.'],
+  44: ['مراجعة احتياجات الصيانة والأكرليك بشكل أسبوعي أو حسب الحاجة.', 'تحديد العناصر التي تحتاج إلى صيانة أو تفصيل جديد.', 'إرسال طلب رسمي إلى قسم الصيانة أو المورد المعتمد.', 'توضيح المواصفات المطلوبة للأكرليك (المقاسات، اللون، الشكل).', 'تحديد موعد الاستلام المتوقع ومتابعة الالتزام به.', 'التنسيق مع الفريق الداخلي لتجهيز القطع قبل التسليم.', 'التأكد من جودة التنفيذ عند الاستلام.'],
+  45: ['تحديد الصواني التي لم يتم الرد عليها خلال 3 أيام من التسليم.', 'التأكد من أن المعرض قام بمحاولات التواصل مع العميل.', 'توثيق عدد المحاولات وتاريخ كل اتصال.', 'إعداد قائمة بالصواني المتأخرة حسب التاريخ والاسم.', 'رفع تقرير مفصل لقسم المالية يتضمن الكميات والتواريخ.', 'توضيح حالة كل طلب (لم يتم الرد – رفض – تأجيل).', 'اقتراح الإجراء المناسب (خصم – إعادة – متابعة إضافية).', 'التنسيق مع المعرض لمتابعة أي ردود لاحقة من العملاء.'],
+  46: ['استخراج قائمة الطلبيات المجدولة للتسليم بعد 4 أيام.', 'مراجعتها يومياً للتأكد من جاهزيتها.', 'التأكد من أن الطلب تم توجيهه للمورد أو قسم الصيانة.', 'التواصل مع الموردين للتأكيد على موعد التسليم.', 'مراجعة تفاصيل الطلب للتأكد من وضوحها.', 'التواصل مع العميل للاستفسار عن أي ملاحظات أو طلب خاص.', 'توثيق أي تعديل أو إضافة على الطلب.', 'تحديث حالة الطلب في النظام الداخلي.', 'التنسيق مع فريق التحضير لتجهيز الطلب في الوقت المناسب.', 'رفع تقرير يومي للإدارة بحالة الطلبيات القادمة.'],
+  47: ['تجهيز الأصناف يومياً للتذوق.', 'تجهيز البوكس حسب المعايير المعتمدة.', 'تسجيل الكميات في الشيت المخصص.', 'وضع كمية كل صنف حسب الكمية المعتمدة والمقدرة.', 'وزن كل صنف وعدد القطع له.', 'وضع الأصناف الطازجة سواء المرسلة من المطبخ أو الفائضة بعد الصف.', 'تحديث الشيت نهاية اليوم وإرجاع الكميات المتبقية وتسجيل الكميات النهائية بعد التذوق.', 'إضافة أصناف جديدة على النموذج.', 'يجب تحديث الشيت يومياً قبل التعبئة وبعدها.', 'جرد شهري لكميات التست لمعرفة الكميات الإجمالية لكل شهر.'],
+  48: ['استخراج قائمة الطلبات الجاهزة غير المستلمة.', 'التنسيق مع قسم خدمة العملاء للتواصل مع العملاء.', 'تحديث حالة كل طلب بعد التواصل.', 'توثيق أسباب عدم الاستلام لكل حالة.', 'إعادة جدولة التسليم إذا لزم الأمر.', 'إبلاغ العميل بمدة صلاحية المنتجات.', 'يمنع إلغاء الطلب دون التواصل مع العميل.', 'يجب توثيق وقت وتاريخ كل محاولة تواصل.', 'تُراجع حالة المنتج قبل إعادة تسليمه.', 'يمنع تأخير التواصل لأكثر من 24 ساعة.'],
+  49: ['استلام الصواني أو المنتجات من المستودع أو قسم التحضير.', 'إجراء فحص بصري ويدوي لكل قطعة للتأكد من مطابقتها لمعايير الجودة.', 'تحديد أي صنف يحتوي على خلل في الشكل، اللون، التغليف أو التناسق.', 'فصل الكميات غير الجيدة مباشرة عن الصواني السليمة.', 'توثيق عدد القطع غير المطابقة في نموذج مخصص أو سجل.', 'إعادة الكميات غير الجيدة إلى المطبخ فوراً دون تأخير.', 'إبلاغ مسؤول المطبخ أو القسم المختص بوجود كميات غير مطابقة.', 'إرسال تقرير مختصر للإدارة أو مسؤول الجودة يتضمن العدد والملاحظات.', 'التأكد من عدم إعادة استخدام هذه الكميات في العرض أو التحضير.'],
+  50: ['مراجعة الطلبات المخصصة للتوصيل خارج الرياض يومياً.', 'تحديد الطلبات ذات الأولوية حسب المدينة ووقت التسليم.', 'جدولة المهام على فريق التحضير مسبقاً.', 'توزيع المهام بشكل عادل حسب الجاهزية والخبرة.', 'إبلاغ الموظفين المعنيين قبل يوم كامل.', 'التنسيق مع مسؤول جدولة التوصيل لتحديد اسم الموظف المسؤول.', 'تجهيز المنتجات الطازجة (إن وجدت) في وقت مبكر.', 'التأكد من جاهزيتها قبل موعد التسليم.', 'تسليم المنتجات صباحاً لمندوب التوصيل.', 'توثيق العملية كاملة لضمان المتابعة.'],
+  51: ['جمع الملاحظات اليومية من الفريق.', 'تصنيف المشاكل (تشغيلية، تنظيمية، موارد، جودة).', 'تحديد الأسباب الجذرية لكل مشكلة.', 'تقدير حجم وتأثير المشكلة على العمل.', 'جمع اقتراحات الفريق للحلول.', 'صياغة الحلول بشكل عملي وقابل للتنفيذ.', 'ترتيب الأولويات حسب خطورة وتأثير المشكلة.', 'إعداد ملخص تنفيذي مختصر للإدارة.', 'مراجعة التقرير مع الفريق للتأكد من دقة المعلومات.', 'رفع التقرير رسمياً من مدير المعرض إلى الإدارة.'],
+  52: ['مشرف التحضير هو المسؤول عن التسجيل.', 'تسجيل أعداد الصواني والبوكسات وفازات VIP.', 'مراجعة الإدخالات يومياً للتأكد من صحتها.', 'تدقيق أسبوعي بمقارنة السجلات مع الإنتاج الفعلي.', 'استخراج تقارير دورية من النظام.', 'تحليل البيانات لمعرفة الإنتاجية والتراجع.', 'مشاركة النتائج مع الموظفين للتحفيز أو التصحيح.', 'رفع ملخص شهري للإدارة يوضح الأداء والإنتاجية.']
+};
+const PREP_TASKS = [
+  {"t":"تخزين أرقام وأسماء العملاء على جوال المعرض لجميع الطلبيات برقم الـ CR قبل المناسبة بخمسة أيام لارسال الصور","o":["jimmy","gerom"],"note":"جيمي رئيسي جيروم بديل","s":["استخراج قائمة الأرقام من الفواتير في النظام قبل المناسبة بـ5 أيام.","حفظ رقم الجوال وتسجيله برقم الـCR لكل طلب في جوال المعرض.","التأكد من تطابق الأرقام مع الطلبات المسجلة.","تجهيز الصور المطلوبة للإرسال لاحقاً.","توثيق العملية وإرسال صور الصواني بعد تحضيرها للعملاء.","كذلك التواصل معهم لأخذ مواقع التوصيل أو لوقو حلا الزفة أو أي استفسار آخر."]},
+  {"t":"اغلاق وفتح مكيفات الهواء والمحافظة على درجة الحرارة 18 حسب ماهو مذكور بالدليل التشغيلي","o":["gaylord","jomar","herfy","gerom"],"note":"جومار رئيسي وهيرفي يوم الاوف، وفي حال كان حضورهم في الشفت الاول تكون المسؤولية على موظفين التحضير تبع الشفت الثاني","s":["تشغيل المكيفات قبل بداية الدوام.","ضبط درجة الحرارة على 18 درجة حسب الدليل التشغيلي.","متابعة درجة الحرارة خلال اليوم.","التأكد من توزيع الهواء بشكل مناسب في الصالة.","إغلاق المكيفات بعد انتهاء الدوام.","تنظيف الفلاتر أسبوعياً يوم الأحد.","رفع أي أعطال لقسم الصيانة فوراً.","يمنع تشغيل المكيفات في حال وجود تسرب أو صوت غير طبيعي.","يمنع تغيير درجة الحرارة دون موافقة الإدارة.","يتم رفع تقرير دوري عن حالة التكييف."],"r":{"gaylord":"b","jomar":"p","herfy":"b","gerom":"b"}},
+  {"t":"الإلتزام بعرض ما لا يقل عن عدد 12 من صواني البيع والتنوع من حيث الاحجام والأسعار ومتابعة المتوفر منها وطلب صواني جديدة وكل ما يتعلق بها والالتزام باخذ موافقه إدارة التطوير قبل العرض","o":["gaylord","herfy","jimmy","roena","mari"],"note":"مع الحرص على أن تكون الأعداد والأشكال المتوفره دائما تكفي لمدة شهر متابعة وتحديث تاريخ الصلاحيه عن طريق جيلورد وتحضير الصواني بالتعاون بين فريق التحضير كل يوم أحد متابعة محمود","s":["تجهيز 12 صينية متنوعة من حيث الحجم والسعر.","التأكد من نظافة كل صينية قبل العرض.","مراجعة حالة الصواني والتأكد من خلوها من أي تلف.","ترتيب الصواني في أماكن العرض مع وضع التسعير لكل صينية والتأكد من التغليف والريبون.","طلب صواني جديدة عند الحاجة من المستودع.","تصويرها بشكل يومي مع ذكر الأوزان لكل صينية وسعرها.","يوضع في كل صينية نوع إلى نوعين حسب السعة، على أن يكون صنف واحد من الأكثر مبيعاً والآخر من الأقل أو المتوسط.","تكون مدة صلاحية المنتجات شهراً ولا توضع منتجات طازجة.","يجب التأكد من وجود تنوع في الأحجام والأسعار.","يجب التأكد من توفر كرت الصلاحية وتاريخ الإنتاج والانتهاء والسعرات على كل صينية."],"r":{"gaylord":"p","herfy":"b","jimmy":"b","roena":"b","mari":"b"}},
+  {"t":"الإلتزام بعرض صينيه من كل شكل (بحالة ممتازة) بالصاله من صواني التأمين.","o":["jawad"],"note":"يتم التنسيق مع جواد لطلب عينه من كل شكل من الصواني","s":["فرز صواني التأمين حسب الشكل.","اختيار صينية واحدة من كل شكل بحالة ممتازة.","تنظيفها وتجهيزها للعرض.","وضعها في أماكن مخصصة بالصالة.","تنويع الصواني في العرض كل أسبوع.","يمنع عرض صواني بها خدوش أو تلف.","يجب التأكد من أن كل شكل ممثل بصينية واحدة على الأقل.","تُنظف الصواني المعروضة يومياً.","يجب التأكد من عدم خلط صواني التأمين مع صواني البيع.","عدم وضع صواني غير معتمدة."],"r":{"jawad":"p"}},
+  {"t":"الالتزام بتعبئة نموذج المراجعة لكافة طلبات التسليم من المعرض","o":["jawad","gaylord"],"note":"في حال الاوف يتم تعبئة النموذج من قبل جيلورد","s":["فتح الطلب في السستم والتشييك عليه.","مراجعة تفاصيل الطلب بدقة.","تعبئة النموذج المعتمد للمراجعة والتأكد من التغليف.","توقيع النموذج من الموظف المسؤول والتأكد من مطابقة الأعداد.","توقيع السائق الذي استلم الطلب.","تصوير ورفع النموذج على قروب الجودة موضحاً وقت التسليم.","يمنع تسليم أي طلب دون تعبئة النموذج.","يجب التأكد من توقيع الموظف والمشرف.","يجب توثيق أي ملاحظات أو اختلافات.","يجب التأكد من تطابق الطلب مع الفاتورة."],"r":{"jawad":"p","gaylord":"b"}},
+  {"t":"الالتزام بتعبئة نموذج المراجعة لكافة طلبات التوصيل أو الاشراف","o":["jawad","gaylord"],"note":"في حال الاوف يتم تعبئة النموذج من قبل جيلورد ومتابعة من زكريا للتاكد بان الطلب تم دفع قيمته بالكامل","s":["فتح الطلب في السستم والتشييك عليه.","مراجعة تفاصيل الطلب بدقة.","تعبئة النموذج المعتمد للمراجعة والتأكد من التغليف.","توقيع النموذج من الموظف المسؤول والتأكد من مطابقة الأعداد.","توقيع السائق الذي استلم الطلب، ثم توقيع المشرفة التي استلمت من السائق عند وصول الطلب للموقع.","تصوير ورفع النموذج على قروب الجودة موضحاً وقت التسليم.","يمنع تسليم أي طلب دون تعبئة النموذج.","يجب التأكد من توقيع السائق ومشرف غرفة التحضير والمشرفة على المناسبة.","يجب توثيق أي ملاحظات أو اختلافات.","يجب التأكد من شنطة الإشراف وأنها تحتوي على جميع المتطلبات."],"r":{"jawad":"p","gaylord":"b"}},
+  {"t":"التأكد من استلام الطلبات من الموردين ووزنها والرفع بالملاحظات للادارة","o":["jawad","herfy","jimmy"],"note":"جيمي يوم الأوف وتشييك من مشرف التحضير","s":["استقبال الطلب من المورد في الوقت المحدد.","التحقق من عدد الأصناف وجودتها.","وزن المنتجات وتوثيق الكمية.","تسجيل أي ملاحظات أو اختلافات وتوثيق أي نقص أو تلف فوراً.","رفع تقرير للإدارة بالملاحظات.","حفظ الفاتورة في سجل الموردين وإرسال نسخة للحسابات مع وضع الأكواد لكل صنف.","التأكد من تطابق الكمية مع الفاتورة.","يمنع استلام أي طلب دون توثيق الوزن.","يجب التأكد من نظافة المنتجات قبل التخزين.","يمنع تخزين المنتجات قبل فحصها."],"r":{"jawad":"p","herfy":"p","jimmy":"b"}},
+  {"t":"طلب صواني التامين والبيع من المستودع","o":["jawad","gaylord","herfy"],"note":"البديل الاول جيلورد والبديل الثاني هيرفي","s":["مراجعة نموذج الحجوزات تبع الصواني.","تحديد أعداد الصواني حسب الطلبات القادمة.","تعبئة النموذج المعتمد لطلب الصواني.","إرسال الطلب للمستودع عبر القنوات الرسمية.","متابعة استلام الصواني والتأكد من مطابقتها للطلب.","فحص جودة الصواني قبل استخدامها.","يمنع خلط صواني التأمين مع صواني البيع.","يمنع استخدام صواني غير مطابقة للمواصفات أو حالتها غير سليمة، ويتم استرجاعها وإبلاغ مسؤول المستودع بإرسال صواني بديلة بحالة جيدة.","يجب التأكد من نظافة الصواني قبل عرضها أو تسليمها.","يجب توثيق أي نقص أو تلف فوراً في النموذج."],"r":{"jawad":"p","gaylord":"b","herfy":"b"}},
+  {"t":"التأكد من شحن الاجهزه الكهربائيه واغلاق جميع اجهزه الكمبيوتر وفصل الشواحن للأجهزة الاخرى بعد انتهاء الدوام","o":["gaylord","jomar","herfy"],"note":"جيلورد رئيسي ويوم الاوف جومار وفي حال كان حضورهم في الشفت الاول تكون المسؤولية على موظفين التحضير تبع الشفت الثاني، وجميع الموظفين في الصالة وخدمة العملاء كل شخص مسؤول عن اغلاق الجهاز بعد استخدامه","s":["شحن الأجهزة الكهربائية قبل نهاية الدوام.","إغلاق جميع أجهزة الكمبيوتر بشكل آمن.","فصل الشواحن للأجهزة الأخرى.","التأكد من عدم وجود أجهزة تعمل بعد الدوام.","فحص البطاريات والتوصيلات بشكل دوري.","تنظيف الأجهزة من الخارج.","رفع أي أعطال لقسم التقنية.","يجب التأكد من فصل جميع الشواحن لتجنب استهلاك الكهرباء.","يجب توثيق أي خلل أو بطء في التشغيل.","يمنع استخدام أجهزة غير معتمدة."],"r":{"gaylord":"p","jomar":"b","herfy":"b"}},
+  {"t":"التأكد من وضع كرت الصلاحيه واستكر السعرات الحراريه واستكر تاريخ الإنتاج على صواني البيع والتأكد من عدم وجود أي ملصقات من المورد","o":["herfy","jimmy"],"note":"هيرفي الرئيسي والشخص البديل يكون جيمي والتشيك في الصالة عن طريق شريف وفي حال الاوف يكون اروى","s":["تجهيز كروت الصلاحية والسعرات وتاريخ الإنتاج.","التأكد من عدم وجود ملصقات المورد.","مراجعة كل صينية قبل العرض.","تصوير الصواني بعد وضع المنتج وعرضها في الصالة.","تحديث تاريخ الصلاحية كل أسبوع أو عند تعبئة جديدة.","يمنع عرض أي صينية بدون كرت صلاحية.","يجب استخدام الاستكرات المعتمدة فقط.","يتم مراجعة تاريخ الإنتاج والانتهاء يومياً.","تُغيَّر الحشوات كل أسبوع للصواني.","يتم التشييك على تغليف الصواني يومياً."],"r":{"herfy":"p","jimmy":"b"}},
+  {"t":"التاكد من الالتزام بسلامة الغذاء في غرفة التحضير (صلاحية المنتجات ولبس القفازات وغطاء الشعر والنظافة العامة للموظفين والمكان)","o":["jawad","gaylord"],"note":"البديل جيلورد","s":["استخدام جهاز قياس درجات حرارة مناسبة (تبريد/تجميد).","ارتداء القفازات عند التعامل المباشر مع المنتجات وتغييرها بين المهام المختلفة.","عدم لمس الوجه أو الأسطح بالقفازات.","استخدام غطاء الشعر والكمامة دائماً والتأكد من تغطية الشعر بالكامل.","الكمامة ضرورية عند التعامل مع الطعام المكشوف.","تنظيف وتعقيم الأسطح والأدوات قبل وبعد الاستخدام.","فحص نظافة زي الموظفين قبل دخول غرفة التحضير والتأكد من خلو الملابس من البقع أو الروائح، ومنع دخول أي موظف بزي غير مخصص للتحضير.","منع تناول الطعام أو الشراب داخل غرفة التحضير.","وضع لافتات توعوية واضحة.","إجراء تفتيش دوري مفاجئ من قبل مشرف السلامة وتوثيق أي مخالفة أو ملاحظة."],"r":{"jawad":"p","gaylord":"b"}},
+  {"t":"التاكد من سلامة الصواني وقت استلامها من العملاء (صواني التامين المستردة)","o":["jawad","gaylord"],"note":"البديل جيلورد","s":["تسجيل البيانات في شيت التأمين.","استلام الصواني المستردة من العميل.","فحص حالة كل صينية بدقة وتوثيق أي تلف أو نقص.","مراجعة التشيك ليست المرفقة مع الطلب.","توقيع الموظف المسؤول على الاستلام.","يمنع استلام صواني دون مراجعة التشيك ليست.","يجب التأكد من تطابق عدد الصواني مع الفاتورة.","يتم مراجعة نموذج التأمين كل 3 أيام.","يجب تصوير الصواني المستلمة وبها خدوش أو تلف وإرسالها للعميل لإبلاغه.","إرسال كود الصواني وقيمة الخصم لقسم الحسابات."],"r":{"jawad":"p","gaylord":"b"}},
+  {"t":"التشييك على صواني العملاء الخاصه بهم للتأكد من عدم الخلط بين صواني العملاء","o":["gaylord","herfy"],"note":"جيلورد رئيسي وهيرفي يوم الاوف","s":["مراجعة الطلبات الخاصة بكل عميل قبل بدء التحضير.","التأكد من سلامة صينية العميل عند الاستلام.","فرز الصواني حسب العميل وتحديد مكان مخصص لكل مجموعة.","وضع رقم الفاتورة على كل صينية.","التأكد من عدم وجود عناصر إضافية أو ناقصة في أي صينية.","مراجعة ترتيب الصواني ووضع مسافة بينها.","إجراء فحص نهائي قبل خروج الطلب لضمان عدم الخلط.","توثيق أي ملاحظة أو تعديل."],"r":{"gaylord":"p","herfy":"b"}},
+  {"t":"التشييك على طريقة صف الصوانى قبل خروجها للعميل من حيث (شكل الترتيب - التغليف)","o":["jawad","gaylord"],"note":"جواد رئيسي ويوم الأوف يكون جيلورد البديل ويجب التشييك من فريق المبيعات عند التسليم","s":["مراجعة الطلب النهائي والتأكد من عدد الصواني المطلوب تسليمها.","التوجه إلى منطقة التحضير قبل وقت التسليم المحدد.","فحص طريقة صف الصواني على الطاولة أو داخل البوكسات.","التأكد من أن الترتيب يعكس الشكل المعتمد للعرض أو التقديم.","مراجعة التغليف الخارجي لكل صينية (ورق، غطاء، ملصق).","التأكد من نظافة الصواني وعدم وجود أي آثار غير مرغوبة.","التحقق من ثبات العناصر داخل الصينية وعدم تحركها أثناء النقل.","توثيق أي ملاحظات أو خلل في الترتيب أو التغليف.","إبلاغ الفريق المسؤول فوراً لتعديل أي خلل قبل التسليم.","اعتماد الصواني الجاهزة وإعطاء الإذن بخروجها للعميل."],"r":{"jawad":"p","gaylord":"b"}},
+  {"t":"العينات للعملاء والتعويضات والهدايا مع التأكد من رقم الفاتورة","o":["jawad","gaylord"],"note":"(البديل شيماء) ويتم التسجيل في النموذج عن طريق جواد (والبديل جيلورد)","s":["مراجعة الطلب أو الحالة التي تستدعي تقديم عينة أو تعويض أو هدية.","التأكد من وجود رقم الفاتورة المرتبط بالعميل أو الحالة.","التحقق من نوع المنتج المطلوب تقديمه (عينة – تعويض – هدية).","تحديد الكمية المناسبة حسب سياسة المعرض أو التوجيه الإداري.","تجهيز المنتج في بوكس مناسب يراعي الشكل والجودة.","تثبيت بطاقة توضح نوع الإرسال (عينة – تعويض – هدية) ورقم الفاتورة.","توثيق العملية في سجل خاص بالهدايا والتعويضات.","التنسيق مع قسم التوصيل لتسليم المنتج للعميل.","إبلاغ الإدارة أو القسم المختص بإتمام العملية.","حفظ نسخة من التوثيق للرجوع إليها عند الحاجة."],"r":{"jawad":"p","gaylord":"b"}},
+  {"t":"تجميع وفك والمحافظة على بوكس التصوير","o":["jomar","gerom"],"note":"بمتابعة وطلب من فيصل","s":["تجهيز بوكس التصوير عند الاحتياج.","التأكد من نظافة البوكس قبل الاستخدام.","تركيب العناصر الداخلية (خلفية، قاعدة، إضاءة) بشكل آمن.","ضبط الإضاءة والزوايا حسب نوع التصوير المطلوب.","استخدام البوكس لتصوير المنتجات وفق الجدول أو الطلبات الخاصة.","تفريغ البوكس من العناصر بعد انتهاء التصوير.","تنظيف البوكس من الداخل والخارج بعد كل استخدام.","فك الأجزاء القابلة للفك وتخزينها بطريقة منظمة.","حفظ البوكس في مكان مخصص بعيداً عن الرطوبة أو التلف.","توثيق حالة البوكس بشكل دوري وإبلاغ القسم المختص بأي خلل."],"r":{"jomar":"p","gerom":"b"}},
+  {"t":"تحديث الكلاينت ركويست بالكميات الفعلية بعد تجهيز الطلب بشكل نهائي","o":["jawad","gaylord","herfy"],"note":"جيلورد البديل الاول وهيرفي البديل الثاني","s":["مراجعة الطلب النهائي بعد انتهاء التجهيز الكامل.","التأكد من مطابقة الكميات الفعلية مع ما تم طلبه.","توثيق أي تعديل أو نقص في الكمية.","فتح نموذج الكلاينت ريكويست الخاص بالطلب.","تحديث الكميات الفعلية في النظام.","إضافة ملاحظات في حال وجود اختلاف عن الطلب الأصلي.","وضع جميع التفاصيل في نموذج الشيك ليست."],"r":{"jawad":"p","gaylord":"b","herfy":"b"}},
+  {"t":"تحديث حالة الوتساب في قروب المشتريات لجدولة السائقين للاستلام من الموردين","o":["jawad","gaylord","herfy"],"note":"جدولة الحالة لكامل الاسبوع. جيلورد البديل الاول وهيرفي البديل الثاني","s":["مراجعة الطلبات التي تحتاج استلاماً من الموردين.","تحديد الكميات الجاهزة للاستلام وتوقيت الاستلام المطلوب.","التنسيق مع الموردين لتأكيد جاهزية الطلب.","إبلاغ مسؤول الخدمات والمساندة بمواعيد الاستلام.","كتابة رسالة واضحة في قروب النقل والتوريد توضح الجدولة.","تضمين اسم المورد، نوع الطلب، والوقت المقترح للاستلام.","التأكد من أن الرسالة وصلت لجميع المعنيين.","متابعة تأكيد السائقين على الجدولة.","تحديث الحالة في حال وجود تغيير أو تأخير."],"r":{"jawad":"p","gaylord":"b","herfy":"b"}},
+  {"t":"تشغيل الشاشات","o":["jomar","herfy"],"note":"جومار رئيسي وهيرفي يوم الاوف","s":["التوجه إلى منطقة الشاشات قبل بدء وقت العمل.","التأكد من نظافة الشاشة والمنطقة المحيطة بها.","فحص التوصيلات الكهربائية والتأكد من سلامتها.","تشغيل الشاشة باستخدام الطريقة المعتمدة (زر أو ريموت).","التأكد من ظهور المحتوى المطلوب على الشاشة.","ضبط الإضاءة والسطوع حسب الحاجة.","التأكد من أن الشاشة تعرض المحتوى الصحيح (عروض – تعليمات – صور).","متابعة الشاشة خلال اليوم للتأكد من استمرار التشغيل.","إطفاء الشاشة في نهاية اليوم أو عند انتهاء العرض.","توثيق أي خلل أو ملاحظة وإبلاغ القسم المختص."],"r":{"jomar":"p","herfy":"b"}},
+  {"t":"تصوير الصوانى وارسالها على واتس العميل وجروب الجوده والتأكد من تنفيذ تعديلاتهم عليها ان وجدت والتعديلات المطلوبه من مدير الجوده","o":["jawad","gaylord"],"note":"التصوير من قبل المعرض بحيث ترسل على قروب مع خدمة العملاء. مسؤولية خدمة العملاء ارسال التعديل للعملاء شهد اساسي، نمارق يوم الاوف. يتم ارسال التعديلات للتحضير عبر القروب مسؤولية عبدالجواد او من ينوب عنه الاطلاع عليها وتعديلها. في حال عدم التجاوب يتم التنسيق مع موظفه خدمة العملاء الموجوده في المعرض. تعديلات مدير الجوده في الصواني يتم الاطلاع عليها قبل ارسال الصور للعملاء ويتم تعديلها ومن ثم يتم ارسالها للعملاء. مسؤولية شهد عدم ارسالها والتاكد من تنفيذها ونمارق نيابه عن شهد، اما مسؤولية شيماء متابعة التعديل في المعرض ونمارق يوم الاوف تبع شيماء","s":["تجهيز الصواني حسب الطلب والمواصفات.","تصويرها بجودة عالية من زوايا متعددة.","إرسال الصور للعميل عبر واتساب.","إرسال الصور أيضاً لقروب الجودة للمراجعة.","تنفيذ أي تعديلات مطلوبة من العميل أو الجودة.","إعادة تصوير الصواني بعد التعديل.","يمنع إرسال صور غير واضحة أو غير مكتملة.","يجب التأكد من وقت إرسال الصور؛ وفي حال كانت المنتجات طازجة تُرسل في نفس اليوم.","يجب التأكد من تطابق الصور مع الطلب الفعلي.","تُراجع الصور من قبل مشرفة الجودة."],"r":{"jawad":"p","gaylord":"b"}},
+  {"t":"تقديم تقرير بالكميات منتهية الصلاحيه أو الزائدة بشكل يومي مع عدم التصرف فيها بدون الرجوع لمدير المعرض و مرفق بالاسباب، بعد التوثيق، وترسل في نفس اليوم إلى منزل المالك دون تاخير","o":["jawad","gaylord"],"note":"جواد رئيسي يوم الاوف جيلورد","s":["فرز البوكسات حسب تاريخ الإنتاج.","مراجعة المخزون يومياً قبل بداية الدوام.","فحص صلاحية كل بوكس بدقة.","تحديد المنتجات منتهية الصلاحية أو الزائدة عن الحاجة.","توثيق الكميات في الشيت.","رفع تقرير بالكميات المنتهية الصلاحية أو التالفة مع كتابة الأسباب المرتبطة بكل حالة (تكدس، انتهاء صلاحية، ضعف الطلب).","يمنع استخدام شوكليت منتهي الصلاحية.","وضع الكميات في بوكس مع إرفاق التقرير وإرسالها إلى المالك.","تُراجع الكميات المنتهية من قبل مشرف التحضير ويُبلَّغ مدير المعرض بذلك.","يمنع التخلص من أي منتج دون توثيق وموافقة."],"r":{"jawad":"p","gaylord":"b"}},
+  {"t":"تقديم تقرير شهري لمدير المعرض بالمشاكل التي تواجه الفريق مع اقتراحات لحلها (كل نهاية الشهر)","o":["jawad"],"s":["جمع ملاحظات الفريق طوال الشهر من الاجتماعات اليومية.","تصنيف المشاكل حسب نوعها (تشغيلية، فنية، تنظيمية، بشرية).","اقتراح حلول عملية لكل مشكلة بناءً على الواقع التشغيلي.","مراجعة النقاط مع الإدارة.","حفظ نسخة في ملف خاص بالتقارير الشهرية.","متابعة تنفيذ الحلول المقترحة وتوثيق نتائجها.","يجب أن يكون التقرير موضوعياً ويعكس الواقع بدقة.","تُشارك نسخة من التقرير مع الفريق بعد اعتماده.","توثيق أي مشكلة متكررة بشكل منفصل."]},
+  {"t":"جرد التشوكلت والبوكسات والصواني الجاهزة للبيع وصواني التامين مره بالاسبوع ووضعها في الشيت المخصص للجرد كل يوم احد","o":["gaylord","herfy"],"note":"جيلورد وهيرفي كل يوم احد","s":["تحديد يوم الأحد للجرد الأسبوعي.","فرز الشوكليت والبوكسات والصواني حسب النوع.","تسجيل الكميات بدقة في الشيت المخصص.","مراجعة حالة كل صنف (جيد، تالف، ناقص).","حفظ نسخة من الجرد في ملف خاص.","متابعة أي اختلافات أو ملاحظات.","يمنع تأجيل الجرد الأسبوعي لأي سبب.","يتم مراجعة الجرد من قبل الحسابات.","يجب توثيق أي نقص أو تلف فوراً.","يجب التأكد من تطابق الجرد مع المخزون الفعلي."],"r":{"gaylord":"p","herfy":"p"}},
+  {"t":"التشييك على الفواتير المستلمة من الموردين، ومطابقتها مع الكميات الفعلية، وإدراج الأكواد اللازمة، ثم إبلاغ قسم الحسابات بها يوميًا دون أي ترحيل أو تأخير.","o":["jawad","gaylord","jomar","herfy"],"note":"هيرفي رئيسي وجومار يوم الاوف وارسال الفواتير عن طريق مشرف التحضير وفي حال الاوف نائب مشرف التحضير","s":["التشييك على المنتجات من الموردين يومياً.","فرز الكميات حسب النوع والتاريخ.","تسجيل الكميات في سجل الجرد اليومي.","مراجعة الفاتورة ومطابقتها مع الكمية المستلمة.","توثيق أي اختلاف أو ملاحظة.","إرسال البيانات لقسم الحسابات في نفس اليوم.","يمنع ترحيل أو تأخير إرسال البيانات للحسابات.","يجب أن يكون الجرد دقيقاً ويشمل كل صنف.","يمنع استلام منتجات غير مطابقة للمواصفات."],"r":{"jawad":"p","gaylord":"b","jomar":"b","herfy":"p"}},
+  {"t":"طلب احتياجات ولوازم القهوه - الماء ... الخ والمشتريات من شيت المستودع 3 مرات بالاسبوع (الاحد + الاربعاء + الجمعة)","o":["gaylord","herfy"],"note":"جيلورد رئيسي وهيرفي يوم الاوف","s":["مراجعة الاحتياج الأسبوعي من القهوة والماء.","تعبئة النموذج المعتمد للطلب.","إرسال الطلب أيام الأحد والأربعاء والجمعة.","متابعة الاستلام من المستودع.","التأكد من تطابق الكمية مع الطلب.","يمنع طلب كميات غير مبررة أو زائدة.","يجب استخدام النموذج المعتمد في السستم.","يجب توثيق أي نقص أو تأخير في الاستلام.","يمنع تغيير أيام الطلب دون موافقة الإدارة.","يجب التأكد من جودة المنتجات المستلمة."],"r":{"gaylord":"p","herfy":"b"}},
+  {"t":"طلب الاكسسوارات والديكورات المعتمدة للصواني (ورد وأكرلك وتوزيعات وغيره) باستخدام النموذج المعتمد","o":["jawad","gaylord"],"s":["مراجعة احتياج المعرض أو التحضير من الاكسسوارات والديكورات.","تحديد العناصر المطلوبة (ورد، أكرليك، توزيعات، إلخ).","استخدام النموذج المعتمد لتعبئة الطلب.","توضيح الكميات والمواصفات المطلوبة لكل عنصر.","إرسال النموذج إلى القسم المختص أو المورد المعتمد.","متابعة تأكيد استلام الطلب من الطرف الآخر.","تحديد موعد الاستلام المتوقع والتنسيق عليه.","التأكد من مطابقة العناصر المستلمة للمواصفات المطلوبة."],"r":{"jawad":"p","gaylord":"b"}},
+  {"t":"طلب جميع المنتجات من الموردين ماعدا حلا الزفه","o":["jawad","gaylord","herfy"],"note":"جيلورد البديل الاول وهيرفي البديل الثاني","s":["مراجعة قائمة المنتجات المطلوبة حسب جدول المناسبات.","تحديد الكميات المطلوبة لكل صنف.","تعبئة النموذج المعتمد لطلب المنتجات.","إرسال الطلب للموردين المعتمدين.","متابعة تأكيد الاستلام من المورد.","مراجعة جودة المنتجات عند الاستلام.","تُعمل الطلبات من قبل مشرف التحضير أو من ينوب عنه.","يجب توثيق أي تأخير أو نقص في الاستلام.","يجب التأكد من تطابق الكمية مع الفاتورة.","يجب الالتزام بالطلب قبل فترة، ما عدا طلبات in call على أن تكون في نفس الموعد المسموح."],"r":{"jawad":"p","gaylord":"b","herfy":"b"}},
+  {"t":"طلب ومتابعة اعمال الصيانة وتفصيل الاكريلك","o":["jawad","gaylord"],"s":["مراجعة احتياجات الصيانة والأكرليك بشكل أسبوعي أو حسب الحاجة.","تحديد العناصر التي تحتاج إلى صيانة أو تفصيل جديد.","إرسال طلب رسمي إلى قسم الصيانة أو المورد المعتمد.","توضيح المواصفات المطلوبة للأكرليك (المقاسات، اللون، الشكل).","تحديد موعد الاستلام المتوقع ومتابعة الالتزام به.","التنسيق مع الفريق الداخلي لتجهيز القطع قبل التسليم.","التأكد من جودة التنفيذ عند الاستلام."],"r":{"jawad":"p","gaylord":"b"}},
+  {"t":"متابعة ورفع تقرير للمالية بالصواني التي تأخر ردها عن 3 ايام ولم يستجب العملاء لاتصالات المعرض","o":["jawad","gaylord"],"note":"جواد رئيسي لجرد الصواني في حال الاوف يكون جيلورد، مع مراجعه شيت التامين بشكل يومي ومقارنته بالطلبات على السستم وابلاغ خدمة العملاء للتواصل مع العميل","s":["تحديد الصواني التي لم يتم الرد عليها خلال 3 أيام من التسليم.","التأكد من أن المعرض قام بمحاولات التواصل مع العميل.","توثيق عدد المحاولات وتاريخ كل اتصال.","إعداد قائمة بالصواني المتأخرة حسب التاريخ والاسم.","رفع تقرير مفصل لقسم المالية يتضمن الكميات والتواريخ.","توضيح حالة كل طلب (لم يتم الرد – رفض – تأجيل).","اقتراح الإجراء المناسب (خصم – إعادة – متابعة إضافية).","التنسيق مع المعرض لمتابعة أي ردود لاحقة من العملاء."],"r":{"jawad":"p","gaylord":"b"}},
+  {"t":"مراجعة الطلب الذي يتم إلغاؤه من قبل العميل للتأكد من عدم تعرض سوار لأي ضرر بسبب الإلغاء واضافة الالغاء في الملاحظات الداخليه مع ذكر السبب","o":["jawad","gaylord"],"note":"مسؤولية الشخص الذي يتواصل مع العميل، ويجب التاكد من مشرف التحضير في حال امكانية الغاء بعض الاصناف التي يمكن بيعها او وضعها على طلبات اخرى والاصناف التي لايمكن التصرف فيها نظرا لمدة صلاحيتها ويجب ابلاغ مدير المعرض لتوجيه بالقرار ومن ثم الإرسال للمالية برد المبالغ بعد مراجعة الأسباب وما ينتج عن الإلغاء","s":["التواصل مع العميلة وسؤالها عن سبب الإلغاء.","مراجعة تفاصيل الطلب بالكامل.","فحص حالة المنتجات ومدة صلاحيتها؛ وإذا لا يوجد تضرر يتم الإلغاء واسترداد المبلغ كاملاً.","التأكد من عدم تعرض الشركة لأي ضرر بسبب الإلغاء.","توثيق الحالة في الواتساب وإبلاغ الحسابات.","يمنع حذف الطلب دون مراجعة حالة المنتج.","يجب توثيق سبب الإلغاء بدقة.","يُراجع الطلب من قبل مدير المعرض ويتخذ القرار.","إذا كان الإلغاء قبل 5 أيام ويوجد أصناف تم تجهيزها، تُخصم قيمتها ويُبلَّغ العميل بذلك.","التأكد من وجود دفعة أو عربون في السستم وإرسال الرسالة المعتمدة للإلغاء للعميل."]},
+  {"t":"مراجعة الطلبيات المتوقع تسليمها بعد 4 ايام (بشكل يومي) للتأكد من طلبها من الموردين او الصيانة والتواصل مع العملاء للاستفسار عن اي شئ غير واضح او طلب خاص","o":["jawad","gaylord"],"note":"متابعة الطلبات المتوقعة تسليمها بعد 4 أيام والتأكد من طلبها من الموردين أو تجهيزها. ومراجعة حجوزات الصواني والتأكد سلامتها ومن توفر العدد المطلوب واسترجاع صواني التأمين بالتنسيق مع جواد. في يوم الاوف يتم التنسيق مع جيلورد لاستكمال المهام. مراجعة تفاصيل حلا الزفة والمشروبات من خلال محمود، ومراجعة التوصيل وتحديث الجدولة عن طريق زكريا، والتواصل مع العملاء يتم بواسطة نمارق لمراجعه اي تفاصيل او استفسارات غير واضحه","s":["استخراج قائمة الطلبيات المجدولة للتسليم بعد 4 أيام.","مراجعتها يومياً للتأكد من جاهزيتها.","التأكد من أن الطلب تم توجيهه للمورد أو قسم الصيانة.","التواصل مع الموردين للتأكيد على موعد التسليم.","مراجعة تفاصيل الطلب للتأكد من وضوحها.","التواصل مع العميل للاستفسار عن أي ملاحظات أو طلب خاص.","توثيق أي تعديل أو إضافة على الطلب.","تحديث حالة الطلب في النظام الداخلي.","التنسيق مع فريق التحضير لتجهيز الطلب في الوقت المناسب.","رفع تقرير يومي للإدارة بحالة الطلبيات القادمة."]},
+  {"t":"التسجيل في شيت التامين ومراجعة التشك ليست بعد رجوعها للمعرض والتوقيع باستلام الصواني بحاله سليمه","o":["jawad","gaylord","jomar"],"note":"يتم تسجيل الصواني التامين في الشيت المخصص ومراجعة التشيك ليست لليوم السابق من حيث مرورها بجميع المراحل والتوقيعات اللازمه لأهميتها في التسليم والاستلام لجميع الأغراض بشكل سليم (جواد تشيك على الاعداد والتشيك على سلامة الصواني والبديل جيلورد، جومار يوم الاوف)","s":["تسجيل البيانات في شيت التأمين.","استلام الصواني المستردة من العميل.","فحص حالة كل صينية بدقة وتوثيق أي تلف أو نقص.","مراجعة التشيك ليست المرفقة مع الطلب.","توقيع الموظف المسؤول على الاستلام.","يمنع استلام صواني دون مراجعة التشيك ليست.","يجب التأكد من تطابق عدد الصواني مع الفاتورة.","يتم مراجعة نموذج التأمين كل 3 أيام.","يجب تصوير الصواني المستلمة وبها خدوش أو تلف وإرسالها للعميل لإبلاغه.","إرسال كود الصواني وقيمة الخصم لقسم الحسابات."],"r":{"jawad":"p","gaylord":"b","jomar":"b"}},
+  {"t":"التشييك على تغليف الصواني ونظافتها بعد التحضير","o":["jawad","jomar"],"note":"عبدالجواد والبديل جومار يوم الاوف","s":["فحص التغليف لكل صينية بعد التحضير.","التأكد من نظافة الصينية والمحتوى.","مراجعة جودة التغليف حسب المعايير.","تصوير الصينية قبل التسليم وإرسال الصور لقسم الجودة.","تنفيذ أي تعديلات مطلوبة.","يمنع تسليم أي صينية دون تغليف محكم.","يجب استخدام مواد تغليف معتمدة فقط.","يتم مراجعة التغليف من قبل مشرفة الجودة.","يمنع استخدام صواني غير نظيفة.","يجب التأكد من تطابق التغليف مع نوع المناسبة."],"r":{"jawad":"p","jomar":"b"}},
+  {"t":"التشييك على بوكسات الشوكليت وتواريخ الصلاحية من الأقدم انتاجا إلى الأحدث وترتيبها","o":["charmlen","mari"],"note":"ماري رئيسي وشارملين البديل","s":["فرز الصناديق حسب النوع والمحتوى.","تنظيفها من الداخل والخارج.","ترتيبها في الرفوف بشكل منظم.","التأكد من سهولة الوصول إليها.","توثيق الكميات المتوفرة في الشيت.","مراجعة تواريخ الصلاحية.","يجب ترتيب بوكسات الشوكليت من الأقدم فالأحدث."],"r":{"charmlen":"b","mari":"p"}},
+  {"t":"تجهيز بوكس التذوق مع تسجيل الكميات في الشيت","o":["gaylord","roena"],"note":"روينا رئيسي و يوم الاوف جيلورد اشراف شريف","s":["تجهيز الأصناف يومياً للتذوق.","تجهيز البوكس حسب المعايير المعتمدة.","تسجيل الكميات في الشيت المخصص.","وضع كمية كل صنف حسب الكمية المعتمدة والمقدرة.","وزن كل صنف وعدد القطع له.","وضع الأصناف الطازجة سواء المرسلة من المطبخ أو الفائضة بعد الصف.","تحديث الشيت نهاية اليوم وإرجاع الكميات المتبقية وتسجيل الكميات النهائية بعد التذوق.","إضافة أصناف جديدة على النموذج.","يجب تحديث الشيت يومياً قبل التعبئة وبعدها.","جرد شهري لكميات التست لمعرفة الكميات الإجمالية لكل شهر."],"r":{"gaylord":"b","roena":"p"}},
+  {"t":"التشييك على توزيعات الاكرليك مع مطابقة اللوقو والاعداد","o":["jawad","gaylord"],"note":"جواد رئيسي وجيلورد في حال الاوف","s":["استلام توزيعات الأكرليك من مندوب قسم الجودة.","فرز التوزيعات حسب النوع والمقاس لتسهيل الفحص.","التأكد من أن كل قطعة تحتوي على اللوقو المعتمد بشكل واضح.","مراجعة جودة طباعة اللوقو من حيث الوضوح والثبات.","مطابقة عدد القطع المستلمة مع الكمية المطلوبة في الطلب.","توثيق أي نقص أو خلل في نموذج مخصص.","فصل القطع غير المطابقة أو التي تحتوي على أخطاء.","إبلاغ الإدارة أو قسم الجودة بالملاحظات فوراً.","وضع رقم الفاتورة التابعة للطلب."],"r":{"jawad":"p","gaylord":"b"}},
+  {"t":"ترتيب الصواني مع التشيك ليست لاعادتها الى المستودع","o":["jawad","gaylord","jomar"],"note":"جواد يوم الاوف والبديل الاول جيلورد البديل الثاني جومار","s":["فرز الصواني حسب النوع والحالة.","مراجعة التشيك ليست الخاصة بكل صينية.","تنظيف الصواني وتجهيزها للإرجاع.","تعبئة نموذج الإرجاع المعتمد.","توقيع النموذج من الموظف المسؤول.","تصوير الصواني بعد تجهيزها للنقل مع الشيك ليست.","يتم الاستلام من قبل المندوب وإرسالها إلى المستودع وتوثيق العملية.","يمنع إعادة صواني غير نظيفة أو تالفة دون وضع ذلك في الشيك ليست.","يجب توثيق أي نقص أو تلف في النموذج.","يمنع خلط صواني التأمين مع صواني البيع."],"r":{"jawad":"p","gaylord":"b","jomar":"b"}},
+  {"t":"وضع التشوكلت المسحوب من الصواني العرض في بوكسات جانبيه وكتابة عبارة (بوش عليها واضافة التاريخ على البوكس)","o":["charmlen","mari"],"note":"شارملين تكون البديلة","s":["جمع الشوكليت المسحوب من صواني العرض في نهاية اليوم أو الأسبوع.","فرز القطع حسب النوع والحالة لضمان صلاحيتها.","تجهيز بوكسات جانبية نظيفة ومناسبة للتخزين.","وضع الشوكليت داخل البوكسات بشكل مرتب وآمن.","كتابة عبارة «بوش» على كل بوكس بشكل واضح.","إضافة تاريخ الإنتاج الفعلي على البطاقة المثبتة.","تثبيت البطاقة على البوكس بطريقة لا تتلف أو تنفصل.","تخزين البوكسات في مكان مخصص بعيداً عن المنتجات الجديدة.","توثيق الكمية والتاريخ في سجل داخلي."],"r":{"charmlen":"b","mari":"p"}},
+  {"t":"المسؤول عن عدم وضع أي بوكسات على الأرض في غرفة التحضير","o":["jawad","jomar","gerom"],"note":"جومار رئيسي وجيروم يوم الاوف ومتابعة من مشرف التحضير","s":["إزالة أي صناديق تالفة أو منتهية.","رفع تقرير شهري عن حالة البوكسات.","يمنع وضع أي صناديق على الأرض."],"r":{"jawad":"p","jomar":"p","gerom":"b"}},
+  {"t":"متابعة وضع استكرات الشوكليت على البوكس مع حصرها قبل انتهاء الكمية","o":["gaylord","charmlen"],"note":"في حال الاوف شارملين","s":["مراجعة البوكسات الجاهزة للتغليف أو التخزين.","التأكد من وجود استكرات الشوكليت المعتمدة لكل نوع.","متابعة عملية تثبيت الاستكرات على البوكسات بشكل صحيح.","التأكد من وضوح المعلومات على كل استكر (النوع – التاريخ – الرمز).","حصر عدد الاستكرات المتبقية بشكل يومي أو أسبوعي.","مقارنة الكمية المتبقية مع عدد الطلبات القادمة.","رفع تنبيه مبكر في حال اقتراب نفاد الكمية.","طلب دفعة جديدة من الاستكرات من المشتريات حسب النموذج المعتمد.","توثيق الكميات المستلمة والمستخدمة في سجل خاص.","التنسيق مع قسم الجودة للتأكد من مطابقة الاستكرات للمواصفات."],"r":{"gaylord":"p","charmlen":"b"}},
+  {"t":"تدريب الزملاء في غرفة التحضير على طرق الصف والتغليف حسب السياسات والجودة المعتمدة في سوار.","o":["jawad","gaylord"],"note":"مع اتباع التعليمات من قبل مسؤولي الجودة","s":["إعداد جدول تدريبي يشمل جميع الزملاء في غرفة التحضير.","تحديد السياسات المعتمدة في سوار للصف والتغليف.","تجهيز نماذج عملية توضح الطريقة الصحيحة للصف.","عرض أمثلة على التغليف المعتمد (بوكس – ورق – استكر).","شرح الأخطاء الشائعة التي يجب تجنبها.","تنفيذ تدريب عملي لكل موظف على صف وتغليف صينية.","تقديم ملاحظات فورية لكل موظف لتحسين الأداء.","توثيق حضور وتفاعل الموظفين في سجل التدريب.","رفع تقرير للإدارة عن نتائج التدريب والملاحظات.","متابعة تطبيق الموظفين لما تم تدريبه عليه في المهام اليومية."],"r":{"jawad":"p","gaylord":"b"}},
+  {"t":"المسؤولية عن متابعة صف جميع الصواني في غرفة التحضير للحرص على خروجها حسب المواصفات بشكل مباشر في غرفة التحضير ومتابعة الصور المرسلة على قروب الجودة بالتعاون مع قسم الجودة.","o":["jawad","gaylord"],"note":"جواد رئيسي في حال الاوف يكون جيلورد","s":["التواجد اليومي في غرفة التحضير لمتابعة صف الصواني قبل خروجها.","التأكد من أن ترتيب الصواني يتوافق مع المواصفات المعتمدة للعرض والتغليف.","مراجعة شكل الترتيب العام داخل الصينية وتناسق العناصر.","التأكد من نظافة الصينية وعدم وجود أي خلل.","متابعة الصور المرسلة على قروب الجودة بشكل فوري.","مقارنة الصور مع المواصفات المعتمدة للتأكد من المطابقة.","التنسيق مع قسم الجودة في حال وجود ملاحظات أو خلل.","توجيه الفريق لتعديل أي صينية غير مطابقة قبل خروجها.","توثيق الحالات التي تم تعديلها أو رفضها."],"r":{"jawad":"p","gaylord":"b"}},
+  {"t":"استلام الصواني من المستودع والتشيك عليها وقت استلامها والتاكد من جودتها والكميات ومطابقتها بالاعداد المطلوبه وتنظيمها في الرفوف","o":["jomar","herfy"],"note":"البديل هيرفي","s":["استلام الصواني من المستودع حسب الجدول والعدد المحدد.","فحص كل صينية من حيث الشكل، النظافة، والحالة العامة.","التأكد من مطابقة العدد المستلم مع الكمية المطلوبة.","تنظيم الصواني في الرفوف حسب النوع والمقاس.","التأكد من مطابقة العدد الفعلي مع الكمية المطلوبة.","فرز الصواني غير المطابقة للجودة مباشرة.","إعادة الصواني غير الجيدة إلى المستودع فوراً.","توثيق أي نقص أو خلل في نموذج مخصص.","رفع تقرير أسبوعي عن حالة الصواني.","إبلاغ الإدارة أو القسم المختص بالملاحظات."],"r":{"jomar":"p","herfy":"b"}},
+  {"t":"مراجعة كل طلبات الشوكلبت للأيام الثلاثة القادمة وارسال الكميات الى المطبخ ومن موردين آخرين وطلب والصواني من المستودع","o":["jawad","gaylord","herfy"],"note":"جواد رئيسي وجيلورد البديل الاول وهيرفي البديل الثاني","s":["استخراج قائمة الطلبات المجدولة للتسليم خلال الأيام الثلاثة القادمة.","مراجعة تفاصيل كل طلب والتأكد من وضوحه.","إرسال الكميات المطلوبة إلى المطبخ للتحضير.","التواصل مع الموردين الآخرين لتأكيد توفر الأصناف المطلوبة.","طلب الصواني من المستودع حسب الحاجة.","التأكد من جاهزية جميع العناصر قبل موعد التسليم.","مراجعة أي طلب خاص أو ملاحظة من العميل.","توثيق حالة كل طلب في سجل المتابعة.","التنسيق مع فريق التحضير لتوزيع المهام.","رفع تقرير يومي للإدارة بحالة الطلبات القادمة."],"r":{"jawad":"p","gaylord":"b","herfy":"b"}},
+  {"t":"تنظيف وتنظيم جميع صناديق الشوكولاتة والاكرليك وضعها في الارفف بشكل منظم","o":["jawad","charmlen","mari"],"note":"البديلة تكون ماري ويجب التوجيه والمتابعه من قبل مشرف التحضير","s":["جمع جميع صناديق الشوكولاتة والأكرليك من مناطق التحضير والتخزين.","تنظيف كل صندوق بعناية باستخدام أدوات مخصصة.","التأكد من إزالة أي بقايا أو آثار داخل الصناديق.","تجفيف الصناديق بالكامل قبل إعادة استخدامها.","فرز الصناديق حسب النوع والحجم.","تنظيمها في الرفوف المخصصة بشكل مرتب وواضح.","تثبيت بطاقات تعريفية لكل رف حسب نوع الصندوق.","توثيق عدد الصناديق الجاهزة للاستخدام.","إبلاغ الفريق بجاهزية الصناديق للتحضير.","متابعة النظافة بشكل دوري لضمان الاستمرارية."],"r":{"jawad":"p","charmlen":"p","mari":"b"}},
+  {"t":"مسؤولية مكان التصوير، بما في ذلك التجهيز، تشغيل وإطفاء الإضاءة، ونظافة البوكس","o":["jimmy","gerom"],"note":"في حال الاوف يكون جيروم","s":["تجهيز مكان التصوير قبل بدء العمل اليومي.","التأكد من نظافة البوكس المستخدم في التصوير.","ترتيب العناصر داخل البوكس حسب المواصفات المعتمدة.","تشغيل الإضاءة المخصصة للتصوير حسب نوع المنتج.","ضبط الزوايا والإعدادات لضمان جودة الصورة.","تصوير المنتجات حسب الجدول أو الطلبات الخاصة.","إطفاء الإضاءة بعد الانتهاء للحفاظ على المعدات.","تنظيف المكان بعد كل جلسة تصوير.","حفظ الصور في المجلد المخصص ومشاركتها مع قسم الجودة.","رفع تقرير دوري عن حالة المكان وجودة الصور."],"r":{"jimmy":"p","gerom":"b"}},
+  {"t":"مراجعة سيارات النقل والسائقين قبل تحميل الطلبات والتأكد من الالتزام بمعايير النظافة والجودة","o":["jawad","gaylord"],"s":["فحص نظافة السيارة من الداخل والخارج.","التأكد من جاهزية السائق والتزامه بالزي الرسمي.","مراجعة جودة التغليف داخل السيارة.","التأكد من تشغيل التكييف داخل السيارة.","توثيق أي ملاحظات أو مخالفات في النموذج تبع التشييك.","تصوير السيارة والطلب بعد التحميل.","التأكد من معلومات العميل المطلوبة ومطابقتها عند تسليم الطلب للسائق.","التأكد من تطابق درجة الحرارة المعتمدة 18 درجة مئوية."],"r":{"jawad":"p","gaylord":"b"}},
+  {"t":"مراجعة حجوزات الصواني والتأكد من تسجيلها بشكل صحيح في الشيت مع تحديد التاريخ المطلوب، ومطابقتها مع البيانات المسجلة في النظام لضمان الدقة قبل المناسبة ب 4 ايام","o":["jawad","gaylord"],"s":["استخراج قائمة الحجوزات من النظام.","التأكد من تسجيل كل حجز في الشيت.","تحديد التاريخ المطلوب لكل حجز بدقة.","مطابقة بيانات الحجز مع الطلبات الفعلية.","مراجعة حالة الصواني المحجوزة.","التواصل مع المستودع لتأكيد الجاهزية.","توثيق أي اختلاف أو نقص في سجل خاص.","رفع تقرير للإدارة قبل المناسبة بـ3 أيام.","يجب التأكد من تطابق الحجز مع رقم الـCR.","يجب التأكد من تاريخ المناسبة والحجز."],"r":{"jawad":"p","gaylord":"b"}},
+  {"t":"ترتيب منتجات الورق والاستكرات والريبون","o":["roena","charmlen"],"note":"البديلة تكون روينا","s":["فرز المنتجات حسب النوع (ورق، استكرات، ريبون).","تنظيف الأدوات قبل الترتيب.","تنظيمها في الأدراج أو الرفوف المخصصة.","التأكد من سهولة الوصول إليها.","التأكد من الكميات المتوفرة وأخذ احتياط بعدم الانقطاع وأنها كافية، ويجب الطلب قبل انتهاء الكمية.","إزالة أي مواد تالفة أو غير صالحة.","رفع تقرير شهري عن حالة التنظيم.","يمنع خلط الأنواع المختلفة في نفس الرف.","يجب توثيق أي نقص أو تلف.","يمنع استخدام أدوات غير معتمدة."],"r":{"roena":"b","charmlen":"p"}},
+  {"t":"التشييك والحفاظ على النظافة في جميع الأوقات خلال الوردية","o":["jawad","gaylord"],"s":["متابعة نظافة الأرضيات والأسطح بشكل دوري خلال الوردية.","تنظيف أي منطقة تتسخ فوراً دون تأخير.","التأكد من توفر أدوات التنظيف في أماكنها.","تنظيف دورات المياه والمعرض حسب الجدول.","تغيير المعطرات عند الحاجة.","مراجعة نظافة الدلة والأكواب بشكل مستمر.","يجب استخدام أدوات تنظيف معتمدة فقط.","تُراجع النظافة من قبل مشرف التحضير لغرفة التحضير، والصالة من قبل مدير المعرض.","يجب التأكد من نظافة منطقة التذوق دائماً.","يجب التشييك بشكل دوري من قبل موظفي النظافة."],"r":{"jawad":"p","gaylord":"b"}},
+  {"t":"جرد جميع الطلبات الجاهزة التي لم يتم استلامها في نفس الموعد من قبل العملاء، والتنسيق مع قسم خدمة العملاء للتواصل معهم، مع ضرورة تحديث حالة كل طلب بعد إتمام التواصل.","o":["jomar","roena"],"note":"يتم التشيك من قبل جومار على الصواني التي لم تستلم وفي حال غيابه يكون البديل روينا وخدمة العملاء يتواصلون مع العميل لتذكير بالاستلام","s":["استخراج قائمة الطلبات الجاهزة غير المستلمة.","التنسيق مع قسم خدمة العملاء للتواصل مع العملاء.","تحديث حالة كل طلب بعد التواصل.","توثيق أسباب عدم الاستلام لكل حالة.","إعادة جدولة التسليم إذا لزم الأمر.","إبلاغ العميل بمدة صلاحية المنتجات.","يمنع إلغاء الطلب دون التواصل مع العميل.","يجب توثيق وقت وتاريخ كل محاولة تواصل.","تُراجع حالة المنتج قبل إعادة تسليمه.","يمنع تأخير التواصل لأكثر من 24 ساعة."],"r":{"jomar":"p","roena":"b"}},
+  {"t":"احصاء الكميات الغير جيده من حيث الجوده واعادتها الى المطبخ مباشرة والابلاغ عن ذلك","o":["jawad","gaylord"],"s":["استلام الصواني أو المنتجات من المستودع أو قسم التحضير.","إجراء فحص بصري ويدوي لكل قطعة للتأكد من مطابقتها لمعايير الجودة.","تحديد أي صنف يحتوي على خلل في الشكل، اللون، التغليف أو التناسق.","فصل الكميات غير الجيدة مباشرة عن الصواني السليمة.","توثيق عدد القطع غير المطابقة في نموذج مخصص أو سجل.","إعادة الكميات غير الجيدة إلى المطبخ فوراً دون تأخير.","إبلاغ مسؤول المطبخ أو القسم المختص بوجود كميات غير مطابقة.","إرسال تقرير مختصر للإدارة أو مسؤول الجودة يتضمن العدد والملاحظات.","التأكد من عدم إعادة استخدام هذه الكميات في العرض أو التحضير."],"r":{"jawad":"p","gaylord":"b"}},
+  {"t":"متابعة تسجيل اعداد للصواني التي تم تحضيرها بالعدد لكل موظف ولكل يوم بالتواريخ في السستم","o":["jawad","gaylord"],"s":["مشرف التحضير هو المسؤول عن التسجيل.","تسجيل أعداد الصواني والبوكسات وفازات VIP.","مراجعة الإدخالات يومياً للتأكد من صحتها.","تدقيق أسبوعي بمقارنة السجلات مع الإنتاج الفعلي.","استخراج تقارير دورية من النظام.","تحليل البيانات لمعرفة الإنتاجية والتراجع.","مشاركة النتائج مع الموظفين للتحفيز أو التصحيح.","رفع ملخص شهري للإدارة يوضح الأداء والإنتاجية."],"r":{"jawad":"p","gaylord":"b"}},
+  {"t":"جدولة الطلبات المخصصة للتوصيل خارج الرياض على فريق التحضير، مع إبلاغهم قبل يوم كامل لضمان الجاهزية، والتنسيق مع مسؤول جدولة التوصيل لإبلاغه باسم الموظف المسؤول، وفي حال وجود منتجات طازجة تُجهَّز وتُسلَّم صباحاً","o":["jawad","gaylord"],"s":["مراجعة الطلبات المخصصة للتوصيل خارج الرياض يومياً.","تحديد الطلبات ذات الأولوية حسب المدينة ووقت التسليم.","جدولة المهام على فريق التحضير مسبقاً.","توزيع المهام بشكل عادل حسب الجاهزية والخبرة.","إبلاغ الموظفين المعنيين قبل يوم كامل.","التنسيق مع مسؤول جدولة التوصيل لتحديد اسم الموظف المسؤول.","تجهيز المنتجات الطازجة (إن وجدت) في وقت مبكر.","التأكد من جاهزيتها قبل موعد التسليم.","تسليم المنتجات صباحاً لمندوب التوصيل.","توثيق العملية كاملة لضمان المتابعة."],"r":{"jawad":"p","gaylord":"b"}},
+  {"t":"متابعة جهاز قياس درجة الحرارة في غرفة التحضير وتسجيل القراءة يوميا","o":["jawad","gaylord"],"note":"جواد رئيسي وجيلورد البديل","r":{"jawad":"p","gaylord":"b"}},
+  {"t":"متابعة قروب العمليات اليومية بين التحضير والمعرض وخدمة العملاء، والتنسيق على الطلبات والتعديلات وحالات On Call وملاحظات الفواتير لضمان سرعة التنفيذ وتقليل الأخطاء التشغيلية.","o":["jawad","gaylord"],"note":"يجب متابعة تنفيذ الطلبات والتأكد من إغلاقها مع وضع علامه وفق الأصول التشغيلية المعتمدة"},
+  {"t":"متابعة طلبات رد التأمين من خلال إرسال رقم الفاتورة وعدد الصواني المسترجعة وحالتها، مع توضيح أي ملاحظات أو ملحقات مفقودة أو خدوش أو نواقص","o":["jawad","gaylord"],"note":"التأكد من اعتماد الاستلام من قبل موظفات خدمة العملاء عبر وضع علامة للتواصل مع العميل وأخذ بياناته، بالإضافة إلى متابعة الصواني التي تجاوزت 3 أيام دون استرجاع من قبل مشرف التحضير او النائب وإشعار خدمة العملاء للتواصل مع العميلة واستكمال إجراءات الاسترجاع."},
+  {"t":"تغليف الصواني لاعادتها الي المستودع مع الشيك ليست والتاكد من سلامتها وتسجيل الملاحظات في النوت وتصويرها على جروب التوريد","o":["gaylord","roena"],"note":"روينا البديل","s":["فرز الصواني حسب النوع والحالة.","مراجعة التشيك ليست الخاصة بكل صينية.","تنظيف الصواني وتجهيزها للإرجاع.","تعبئة نموذج الإرجاع المعتمد.","توقيع النموذج من الموظف المسؤول.","تصوير الصواني بعد تجهيزها للنقل مع الشيك ليست.","يتم الاستلام من قبل المندوب وإرسالها إلى المستودع وتوثيق العملية.","يمنع إعادة صواني غير نظيفة أو تالفة دون وضع ذلك في الشيك ليست.","يجب توثيق أي نقص أو تلف في النموذج.","يمنع خلط صواني التأمين مع صواني البيع."],"r":{"gaylord":"p","roena":"b"}},
+  {"t":"متابعة الكميات الفائضة بعد الانتهاء من عملية الصف، خصوصًا المنتجات الطازجة، وإبلاغ المشرف بها في نفس اليوم لاتخاذ الإجراءات اللازمة والتصرف بالكميات في الوقت المناسب.","o":["charmlen","roena"],"note":"روينا البديل","r":{"charmlen":"p","roena":"b"}}
+];
+
+const DEPTS = {
+  showroom: { ar: 'المعرض والمبيعات', en: 'Showroom & Sales', owners: SHOW_OWNERS, tasks: SHOW_TASKS },
+  prep:     { ar: 'فريق التحضير',     en: 'Preparation Team', owners: PREP_OWNERS, tasks: PREP_TASKS }
+};
+
+let OWNERS = SHOW_OWNERS, TASKS = SHOW_TASKS;
+
+const ROLE = { p: { ar: 'أساسي', bg: '#2E7D4F', soft: '#E3F1E8', ink: '#FFFFFF', text: '#1F5C39' }, b: { ar: 'بديل', bg: '#E2A400', soft: '#FBF0D2', ink: '#2A2100', text: '#7A5800' } };
+const ALIASES = { jawad: ['عبدالجواد', 'جواد'], gaylord: ['جيلورد', 'جايلورد'], arwa: ['أروى', 'اروى'], herfy: ['هيرفي'], charmlen: ['شارملين', 'شرميلين'], shima: ['شيماء'], namareq: ['نمارق'] };
+const BACK_BEFORE = /(بديل|البديل|الأوف|الاوف|غياب|غيابه|يكون)[^،.]{0,14}$/;
+const BACK_AFTER = /^[\s،,]*(يوم\s*ال[أا]وف|في\s*حال\s*ال[أا]وف|بديل|البديل\s*$)/;
+const PRIM_AFTER = /^[\s،,]*(رئيسي|رئيسية|اساسي|أساسي)/;
+function rolesFor(t, owners) {
+  const map = {};
+  if (t.r) { t.o.forEach(k => { map[k] = t.r[k] || 'p'; }); return map; }
+  if (t.o.length === 1) { map[t.o[0]] = 'p'; return map; }
+  const note = (t.note || '').replace(/\s+/g, ' ');
+  const found = {};
+  t.o.forEach(k => {
+    const o = owners.find(x => x.key === k);
+    const names = (ALIASES[k] || []).concat(o ? [o.name] : []);
+    let idx = -1, len = 0;
+    names.forEach(n => { const i = note.indexOf(n); if (i >= 0 && (idx < 0 || i < idx)) { idx = i; len = n.length; } });
+    if (idx < 0) return;
+    const before = note.slice(Math.max(0, idx - 24), idx);
+    const after = note.slice(idx + len, idx + len + 18);
+    if (PRIM_AFTER.test(after)) found[k] = 'p';
+    else if (BACK_AFTER.test(after) || BACK_BEFORE.test(before)) found[k] = 'b';
+    else found[k] = 'p';
+  });
+  const anyP = Object.values(found).includes('p');
+  t.o.forEach(k => { map[k] = found[k] || (anyP ? 'b' : 'p'); });
+  if (!Object.values(map).includes('b')) t.o.forEach((k, i) => { map[k] = i === 0 ? 'p' : 'b'; });
+  if (t.o.length >= 5 || /الجميع|كل شخص|جميع الموظفين/.test(note)) {
+    if (!found || !Object.values(found).includes('b')) t.o.forEach(k => { map[k] = 'p'; });
+  }
+  return map;
+}
+
+const STAGES = [
+  { n: '١', ar: 'قبل المناسبة · الحجز والطلب', c: '#3A5A9B', re: /^(طلب (?!رد)|مراجعة (كل )?طلب|مراجعة حجوزات|تخزين أرقام|استقبال عملاء)|الطلبيات المتوقع|الكلاينت|طلب حلى/ },
+  { n: '٢', ar: 'الاستلام والمخزون', c: '#6A5A8E', re: /استلام|الموردين|الفواتير المستلمة|جرد|الصلاحية|منتهية|ترتيب منتجات|بوش|بوكسات على الأرض|صناديق|الأرض|الشحن|شحن/ },
+  { n: '٣', ar: 'التحضير والجودة', c: '#B4552D', re: /صف|تغليف|التحضير|تصوير|بوكس|الشوكل|التشوكل|صواني|الغذاء|التذوق|جودة|الجوده|توزيعات|حلا|حلى|استكر|الاكرليك|الاكريلك|الأكريلك|الصيانة|الورق/ },
+  { n: '٤', ar: 'التسليم والتوصيل', c: '#2F6F5E', re: /التسليم|التوصيل|سيارات النقل|الاشراف|الإشراف|الاشرافات|خارج الرياض|لوكيشن|المشرفات|سداد|الدفع|المدفوعات|تسليم|فواتير المبيعات/ },
+  { n: '٥', ar: 'بعد التسليم · التأمين والعملاء', c: '#8A6A12', re: /ت[أا]مين|المستردة|تقييم|شكاوي|الغاؤه|إلغاؤه|الغاء|العينات للعملاء|تأخر ردها|لم يتم استلامها|الحوالات|استرداد/ },
+  { n: '٦', ar: 'تشغيل المعرض والفريق', c: '#4A504A', re: null },
+  { n: '٧', ar: 'إدارية وتعليمات ومطبوعات', c: '#7A3E5C', re: /تقرير بمبالغ|طباعة|مطبوعات|ارسال بطاقات|تدريب|تقرير شهري|العمل الاضافي|الاوفر|المنيو|اعلان|إعلان/ },
+  { n: '٨', ar: 'عند الحاجة', c: '#5C6B73', re: /تجميع وفك/ }
+];
+function stageOf(t) {
+  if (STAGES[7].re.test(t.t)) return 7;
+  if (STAGES[6].re.test(t.t)) return 6;
+  const order = [4, 3, 0, 1, 2];
+  for (const i of order) if (STAGES[i].re.test(t.t)) return i;
+  return 5;
+}
+
+class Component extends DCLogic {
+  state = { view: null, filter: null, open: null, dept: null };
+
+  view() { return this.state.view || this.props.defaultView || 'matrix'; }
+  owner(k) { return OWNERS.find(o => o.key === k); }
+
+  visible() {
+    const f = this.state.filter;
+    return TASKS.map((t, i) => ({ ...t, num: i + 1 })).filter(t => !f || t.o.includes(f));
+  }
+
+  tab(active) {
+    return 'font-family: inherit; font-size: 13px; font-weight: 600; padding: 8px 16px; border-radius: 999px; cursor: pointer; border: 1px solid ' +
+      (active ? '#171C1A' : 'transparent') + '; background: ' + (active ? '#171C1A' : 'transparent') +
+      '; color: ' + (active ? '#FBFAF6' : '#4A504A') + '; transition: all .15s ease';
+  }
+  dot(color, size) {
+    const s = size || 9;
+    return 'width: ' + s + 'px; height: ' + s + 'px; border-radius: 2px; background: ' + color + '; flex: none';
+  }
+  numPill(color) {
+    return "font-family: 'Space Grotesk', sans-serif; font-size: 11px; font-weight: 600; color: " + color + '; text-align: center';
+  }
+  stepsBadge(has) {
+    return "font-family: 'Space Grotesk', sans-serif; font-size: 10.5px; font-weight: 600; letter-spacing: .04em; padding: 2px 7px; border-radius: 999px; white-space: nowrap; color: " +
+      (has ? '#2F6F5E' : '#5D635D') + '; background: ' + (has ? '#E1EDE7' : '#EFEDE6');
+  }
+
+  flowVals(rows) {
+    const buckets = STAGES.map(() => []);
+    rows.forEach(t => buckets[stageOf(t)].push(t));
+    return STAGES.map((s, i) => ({
+      n: s.n, name: s.ar, count: buckets[i].length + ' مهمة',
+      headStyle: 'display: flex; flex-direction: column; gap: 3px; padding: 11px 13px; color: #FBFAF6; border-radius: 3px; background: ' + s.c,
+      cards: buckets[i].map(t => ({
+        num: t.num, title: t.t,
+        steps: t.s ? t.s.length + ' خطوة' : '—', stepsStyle: this.stepsBadge(!!t.s),
+        onOpen: () => this.setState({ open: t.num - 1 }),
+        pills: t.o.slice().sort((a, b) => (t.roles[a] === 'p' ? 0 : 1) - (t.roles[b] === 'p' ? 0 : 1)).map(k => ({
+          name: this.owner(k).name,
+          style: 'font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; color: ' + ROLE[t.roles[k]].ink + '; background: ' + ROLE[t.roles[k]].bg
+        }))
+      }))
+    }));
+  }
+
+  laneVals() {
+    const F = this.state.filter;
+    const all = TASKS.map((t, i) => ({ ...t, num: i + 1, roles: rolesFor(t, OWNERS), st: stageOf(t) }));
+    return {
+      laneHeads: STAGES.map(s => ({ n: s.n, name: s.ar, style: 'display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: 3px; color: #FBFAF6; background: ' + s.c })),
+      laneRows: OWNERS.filter(o => !F || o.key === F).map(o => {
+        const own = all.filter(t => t.o.includes(o.key));
+        const pc = own.filter(t => t.roles[o.key] === 'p').length;
+        return {
+          name: o.name, sub: own.length + ' مهمة · أ ' + pc + ' · ب ' + (own.length - pc),
+          cells: STAGES.map((s, i) => ({
+            chips: own.filter(t => t.st === i).map(t => ({
+              num: t.num, title: t.t,
+              onOpen: () => this.setState({ open: t.num - 1 }),
+              style: 'font-size: 11px; line-height: 1.45; padding: 5px 7px; border-radius: 3px; cursor: pointer; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; color: ' + ROLE[t.roles[o.key]].text + '; background: ' + ROLE[t.roles[o.key]].soft + '; border-right: 4px solid ' + ROLE[t.roles[o.key]].bg
+            }))
+          }))
+        };
+      })
+    };
+  }
+
+  netVals() {
+    const n = OWNERS.length, cx = 320, cy = 262, R = 196, F = this.state.filter;
+    const pos = {};
+    OWNERS.forEach((o, i) => { const a = -Math.PI / 2 + i * 2 * Math.PI / n; pos[o.key] = { x: cx + R * Math.cos(a), y: cy + R * Math.sin(a) }; });
+    const pairs = {}, stat = {};
+    OWNERS.forEach(o => { stat[o.key] = { p: 0, b: 0, gap: 0 }; });
+    TASKS.forEach(t => {
+      const rr = rolesFor(t, OWNERS);
+      const ps = t.o.filter(k => rr[k] === 'p'), bs = t.o.filter(k => rr[k] === 'b');
+      t.o.forEach(k => { if (stat[k]) stat[k][rr[k]]++; });
+      if (!bs.length) ps.forEach(k => { if (stat[k]) stat[k].gap++; });
+      bs.forEach(b => ps.forEach(p => { const key = b + '|' + p; pairs[key] = (pairs[key] || 0) + 1; }));
+    });
+    const list = Object.keys(pairs).map(k => { const [b, p] = k.split('|'); return { b, p, n: pairs[k] }; }).sort((x, y) => y.n - x.n);
+    const maxN = Math.max(1, ...list.map(e => e.n));
+    const rolePill = (r, nm) => 'display: inline-flex; align-items: center; white-space: nowrap; line-height: 1.6; font-weight: 600; font-size: 12px; padding: 2px 9px; border-radius: 999px; color: ' + ROLE[r].ink + '; background: ' + ROLE[r].bg;
+    return {
+      netNodes: OWNERS.map(o => {
+        const q = pos[o.key], st = stat[o.key], on = F === o.key, dim = F && !on;
+        const pc = (v, t) => (v / t * 100).toFixed(2) + '%';
+        return {
+          name: o.name, sub: 'أ ' + st.p + ' · ب ' + st.b,
+          onClick: () => this.setState(s => ({ filter: s.filter === o.key ? null : o.key })),
+          boxStyle: 'position: absolute; left: ' + pc(q.x, 640) + '; top: ' + pc(q.y, 540) + '; transform: translate(-50%, -34px); display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; opacity: ' + (dim ? 0.45 : 1),
+          circleStyle: "width: 68px; height: 68px; border-radius: 50%; background: #171C1A; color: #FBFAF6; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; direction: rtl; font-family: 'IBM Plex Sans Arabic', sans-serif; border: " + (on ? '4px solid #B4552D' : '3px solid #FBFAF6') + '; box-sizing: border-box',
+          subStyle: "font-size: 11px; font-weight: 600; color: #4A504A; white-space: nowrap; direction: rtl; font-family: 'IBM Plex Sans Arabic', sans-serif"
+        };
+      }),
+      netEdges: list.filter(e => pos[e.b] && pos[e.p]).map(e => {
+        const A = pos[e.b], B = pos[e.p];
+        const dx = B.x - A.x, dy = B.y - A.y, L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L;
+        const sx = A.x + ux * 36, sy = A.y + uy * 36, ex = B.x - ux * 39, ey = B.y - uy * 39;
+        const qx = (sx + ex) / 2 - uy * 26, qy = (sy + ey) / 2 + ux * 26;
+        const mx = 0.25 * sx + 0.5 * qx + 0.25 * ex, my = 0.25 * sy + 0.5 * qy + 0.25 * ey;
+        const hot = !F || F === e.b || F === e.p, op = hot ? 1 : 0.12;
+        const col = F && hot ? '#B4552D' : '#8A9189';
+        return {
+          d: 'M' + sx + ' ' + sy + ' Q' + qx + ' ' + qy + ' ' + ex + ' ' + ey, ex, ey, mx, my, ty: my + 4, w: e.n,
+          pathStyle: 'fill: none; stroke: ' + col + '; stroke-width: ' + (1.5 + 4.5 * e.n / maxN) + '; opacity: ' + op,
+          dotStyle: 'fill: ' + ROLE.p.bg + '; stroke: #FBFAF6; stroke-width: 1.5; opacity: ' + op,
+          badgeStyle: 'position: absolute; left: ' + (mx / 640 * 100).toFixed(2) + '%; top: ' + (my / 540 * 100).toFixed(2) + "%; transform: translate(-50%, -50%); min-width: 20px; height: 20px; border-radius: 999px; background: #FBFAF6; border: 1px solid " + col + "; color: #171C1A; font-family: 'Space Grotesk', sans-serif; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; box-sizing: border-box; opacity: " + op
+        };
+      }),
+      netPairs: list.map(e => ({ b: this.owner(e.b).name, p: this.owner(e.p).name, n: e.n + ' مهمة', bStyle: rolePill('b'), pStyle: rolePill('p') })),
+      netGaps: OWNERS.map(o => ({ name: o.name, n: stat[o.key].gap, style: "font-family: 'Space Grotesk', sans-serif; font-weight: 700; color: " + (stat[o.key].gap ? '#B4552D' : '#5D635D') }))
+        .sort((a, b) => b.n - a.n).map(g => ({ ...g, n: g.n + ' مهمة' }))
+    };
+  }
+
+  renderVals() {
+    const dept = this.state.dept || 'showroom';
+    OWNERS = DEPTS[dept].owners;
+    TASKS = DEPTS[dept].tasks;
+    const view = this.view();
+    const rows = this.visible().map(t => ({ ...t, roles: rolesFor(t, OWNERS) }));
+    const cols = 'repeat(' + OWNERS.length + ', 56px)';
+    const tmpl = 'display: grid; grid-template-columns: 32px minmax(180px, 1.5fr) ' + cols + ' minmax(120px, .85fr); gap: 8px; align-items: center;';
+    const opened = this.state.open != null ? TASKS[this.state.open] : null;
+    const totalSteps = TASKS.reduce((a, t) => a + (t.s ? t.s.length : 0), 0);
+    const withSteps = TASKS.filter(t => t.s).length;
+
+    return {
+      deptTabs: Object.keys(DEPTS).map(k => ({
+        ar: DEPTS[k].ar, en: DEPTS[k].en, count: DEPTS[k].tasks.length + ' مهمة',
+        onClick: () => this.setState({ dept: k, filter: null, open: null }),
+        style: 'font-family: inherit; text-align: right; display: flex; flex-direction: column; gap: 2px; padding: 9px 16px; border-radius: 3px; cursor: pointer; transition: all .15s ease; border: 1px solid ' +
+          (dept === k ? '#171C1A' : '#D9D3C7') + '; background: ' + (dept === k ? '#171C1A' : 'transparent') +
+          '; color: ' + (dept === k ? '#FBFAF6' : '#4A504A'),
+        enStyle: "font-family: 'Space Grotesk', sans-serif; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; opacity: .62",
+        arStyle: 'font-size: 13.5px; font-weight: 600'
+      })),
+      deptName: DEPTS[dept].ar,
+      isMatrix: view === 'matrix',
+      isBoard: view === 'board',
+      showMatrix: () => this.setState({ view: 'matrix' }),
+      showBoard: () => this.setState({ view: 'board' }),
+      showNetwork: () => this.setState({ view: 'network' }),
+      showFlow: () => this.setState({ view: 'flow' }),
+      showLanes: () => this.setState({ view: 'lanes' }),
+      lanesTabStyle: this.tab(view === 'lanes'),
+      isLanes: view === 'lanes',
+      ...this.laneVals(),
+      networkTabStyle: this.tab(view === 'network'),
+      flowTabStyle: this.tab(view === 'flow'),
+      isNetwork: view === 'network',
+      isFlow: view === 'flow',
+      ...this.netVals(),
+      flowCols: this.flowVals(rows),
+      matrixTabStyle: this.tab(view === 'matrix'),
+      boardTabStyle: this.tab(view === 'board'),
+      legendRoles: [
+        { ar: 'المسؤول الأساسي', style: 'width: 12px; height: 12px; border-radius: 999px; background: ' + ROLE.p.bg },
+        { ar: 'البديل', style: 'width: 12px; height: 12px; border-radius: 999px; background: ' + ROLE.b.bg }
+      ],
+      filterHint: this.state.filter ? 'يُعرض ' + rows.length + ' من ' + TASKS.length + ' مهمة — اضغط الاسم مرة أخرى لإلغاء التصفية' : '',
+      ownerChips: OWNERS.map(o => {
+        const active = this.state.filter === o.key;
+        const count = TASKS.filter(t => t.o.includes(o.key)).length;
+        return {
+          name: o.name, count: count,
+          dot: this.dot('#171C1A', 7),
+          onClick: () => this.setState(s => ({ filter: s.filter === o.key ? null : o.key })),
+          style: 'font-family: inherit; display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 500; padding: 6px 11px; border-radius: 999px; cursor: pointer; transition: all .15s ease; border: 1px solid ' +
+            (active ? '#171C1A' : '#D9D3C7') + '; background: ' + (active ? '#FFFEFA' : 'transparent') + '; color: #171C1A'
+        };
+      }),
+      gridMinWidth: 'min-width: ' + (404 + OWNERS.length * 66) + 'px',
+      headRowStyle: tmpl + ' padding: 14px 14px; border-bottom: 1px solid #D9D3C7; background: #F1EEE6; position: sticky; top: 0; z-index: 2',
+      owners: OWNERS.map(o => ({
+        name: o.name,
+        dot: 'display: none',
+        headStyle: 'display: flex; flex-direction: column; align-items: center; gap: 4px'
+      })),
+      rows: rows.map((t, i) => ({
+        num: t.num, title: t.t, note: t.note || '—',
+        numStyle: this.numPill('#5D635D'),
+        stepsLabel: t.s ? t.s.length + ' خطوة معتمدة' : 'لا يوجد لها صفوف في ورقة الخطوات',
+        stepsBadgeStyle: this.stepsBadge(!!t.s) + '; align-self: flex-start',
+        onOpen: () => this.setState({ open: TASKS.indexOf(TASKS[t.num - 1]) }),
+        style: tmpl + ' padding: 12px 14px; cursor: pointer; border-bottom: 1px solid #EBE6DB; background: ' + (i % 2 ? '#F7F5EE' : '#FBFAF6'),
+        cells: OWNERS.map(o => {
+          const r = t.roles[o.key];
+          return {
+            label: r ? ROLE[r].ar : '',
+            style: r
+              ? 'min-width: 40px; height: 22px; padding: 0 6px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-size: 10.5px; font-weight: 700; color: ' + ROLE[r].ink + '; background: ' + ROLE[r].bg
+              : 'width: 14px; height: 1.5px; border-radius: 2px; background: #DCD6C9'
+          };
+        })
+      })),
+      boardCols: OWNERS.map(o => {
+        const own = TASKS.map((t, i) => ({ ...t, num: i + 1, roles: rolesFor(t, OWNERS) })).filter(t => t.o.includes(o.key));
+        const pc = own.filter(t => t.roles[o.key] === 'p').length;
+        return {
+          name: o.name, count: own.length ? own.length + ' مهمة' : 'لا مهام',
+          dot: this.dot('#171C1A', 9),
+          shared: (o.off ? 'يوم الراحة: ' + o.off + ' · ' : '') + (own.length ? 'أساسي: ' + pc + ' · بديل: ' + (own.length - pc) : 'غير مُسند إليه مهام في الملف المعتمد'),
+          headStyle: 'display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 14px 6px; border-top: 3px solid #171C1A',
+          cards: own.map(t => ({
+            num: 'م' + t.num, title: t.t,
+            numStyle: this.numPill('#5D635D'),
+            roleLabel: ROLE[t.roles[o.key]].ar,
+            roleStyle: 'font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; color: ' + ROLE[t.roles[o.key]].ink + '; background: ' + ROLE[t.roles[o.key]].bg,
+            stepsLabel: t.s ? t.s.length + ' خطوة' : '—',
+            stepsBadgeStyle: this.stepsBadge(!!t.s),
+            withLabel: t.o.length > 1 ? 'مع: ' + t.o.filter(k => k !== o.key).map(k => this.owner(k).name + ' (' + ROLE[t.roles[k]].ar + ')').join('، ') : 'مسؤولية منفردة',
+            withStyle: 'font-size: 11.5px; color: #6B726C; padding-top: 7px; margin-top: 3px; border-top: 1px dashed #E0DACD',
+            onOpen: () => this.setState({ open: t.num - 1 }),
+            style: 'display: flex; flex-direction: column; gap: 5px; padding: 11px 12px; background: #FFFEFA; border: 1px solid #E0DACD; border-right: 4px solid ' +
+              ROLE[t.roles[o.key]].bg + '; border-radius: 3px; cursor: pointer; transition: border-color .15s ease'
+          }))
+        };
+      }),
+      hasOpen: !!opened,
+      closeDrawer: () => this.setState({ open: null }),
+      openNum: opened ? this.state.open + 1 : '',
+      openTitle: opened ? opened.t : '',
+      openNote: opened && opened.note ? opened.note : false,
+      openOwners: opened ? (() => { const rr = rolesFor(opened, OWNERS); return opened.o.slice().sort((a, b) => (rr[a] === 'p' ? 0 : 1) - (rr[b] === 'p' ? 0 : 1)).map(k => {
+        const o = this.owner(k);
+        return { name: o.name + ' · ' + ROLE[rr[k]].ar, style: 'font-size: 11.5px; font-weight: 600; padding: 3px 10px; border-radius: 999px; color: ' + ROLE[rr[k]].ink + '; background: ' + ROLE[rr[k]].bg };
+      }); })() : [],
+      openHasSteps: !!(opened && opened.s),
+      openNoSteps: !!(opened && !opened.s),
+      openSteps: opened && opened.s ? opened.s.map((text, i) => ({
+        n: i + 1, text: text,
+        numStyle: "font-family: 'Space Grotesk', sans-serif; font-size: 11.5px; font-weight: 600; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex: none; color: #FBFAF6; background: #171C1A",
+        lineStyle: 'flex: 1; width: 1px; background: ' + (i === opened.s.length - 1 ? 'transparent' : '#D0C9BA')
+      })) : [],
+      summary: DEPTS[dept].ar + ' · ' + TASKS.length + ' مهمة معتمدة · ' + OWNERS.length + ' زملاء · ' + withSteps + ' مهمة موثّقة بخطوات تفصيلية',
+      summaryEn: DEPTS[dept].en + ' · ' + TASKS.length + ' tasks · ' + totalSteps + ' documented steps'
+    };
+  }
+}
+</script>
+</body>
+</html>
